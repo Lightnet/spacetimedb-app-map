@@ -175,6 +175,8 @@ function validateName(name: string) {
 }
 
 export const set_name = spacetimedb.reducer({ name: t.string() }, (ctx, { name }) => {
+
+  console.info("Name: ",name);
   validateName(name);
   const user = ctx.db.user.identity.find(ctx.sender);
   if (!user) {
