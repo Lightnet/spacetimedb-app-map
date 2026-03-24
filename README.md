@@ -119,24 +119,26 @@ const conn = DbConnection.builder()
 - 
 
   SpaceTimeDB set up for server and database application.
-
+## start app
 ```
 spacetime start
 ```
 - start database and server application.
 - note it need to run on terminal.
+## Publish module:
 ```
 spacetime publish --server local --module-path spacetimedb spacetime-app-map
 ```
 - run spacetime to push module app
 - This support Typescript to push to module to run server for clients to access web socket.
+## App logs:
 ```
 spacetime logs -s local -f spacetime-app-map 
 ```
 - Note this run another terminal to access spacetimedb client to log for database name.
 - log datbase spacetime-app-map debug 
 
-
+## Export client module:
 ```
 spacetime generate --lang typescript --out-dir src/module_bindings --module-path spacetimedb
 ```
@@ -146,6 +148,32 @@ spacetime generate --lang typescript --out-dir src/module_bindings --module-path
 
 ## web server:
   Using the vite js for easy to handle typescript and javacript browser support. It only to use to run static files.
+```
+bun run dev
+```
+## SQL:
+  To manual check sql table names.
+```
+spacetime sql --server local spacetime-app-map "SELECT * FROM user"
+```
+
+```
+spacetime sql --server local spacetime-app-map "SELECT * FROM message"
+```
+
+```
+spacetime sql --server local spacetime-app-map "SELECT * FROM task"
+```
+
+
+```
+spacetime sql --server local spacetime-app-map "SELECT * FROM reminder"
+```
+
+```
+spacetime sql --server local spacetime-app-map "SELECT * FROM planet3d"
+```
+
 
 
 ## Notes:
@@ -156,13 +184,18 @@ spacetime generate --lang typescript --out-dir src/module_bindings --module-path
 ## schedules.html:
 - schedule
   Testing the one time timer to trigger message.
-
 - event
   Testing the event damage example from spacetimedb docs
 
 
 # planet.html:
-  Work in progress.
+- longitude
+- latitude
+- latLonToVector3
+- vector3ToLatLon
+- mouse to latitude,longitude on sphere
+- place marker base on latitude,longitude to 3d point
+- work in progress.
 
 # chat:
   Work in progress.
@@ -174,3 +207,7 @@ spacetime generate --lang typescript --out-dir src/module_bindings --module-path
 - add task
 - remove task
 - update task
+
+# map3D:
+- place tile
+- place marker

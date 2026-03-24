@@ -1,11 +1,20 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import van from "https://cdn.jsdelivr.net/gh/vanjs-org/van/public/van-1.6.0.min.js";
+import {Pane} from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
 
 const HOST = 'ws://localhost:3000';
 const DB_NAME = 'spacetime-app-map';
 const {div, button, label, input, li, ul} = van.tags;
 
+var longitude = 0; // y
+var latitude = 0;  // x
+
+var interactiveObjects = [];
+var interactiveObject = null;
+const MappingConfig = {
+  key1:""
+}
 // ────────────────────────────────────────────────
 // Scene setup
 const scene = new THREE.Scene();
@@ -113,6 +122,8 @@ function onPointerMove(event) {
   if (intersects.length > 0) {
     const point = intersects[0].point.clone(); // world space
     const { lat, lon } = vector3ToLatLon(point, 2);
+    longitude =  lon;
+    latitude =  lat;
     // let pos = latLonToVector3(0, 0);
     let pos = latLonToVector3(lat, lon);
 
@@ -148,7 +159,7 @@ function onPointerMove(event) {
     elabel.style.display = 'none';
   }
 
-  raycast_check_marker();
+  // raycast_check_marker();
 }
 
 // ────────────────────────────────────────────────
@@ -165,20 +176,85 @@ camera.position.z = 6;
 
 function animate() {
   requestAnimationFrame(animate);
-
   // gentle rotation
   planet.rotation.y += 0.0015;
-
   if(controls){
     controls.update();
   }
-
   renderer.render(scene, camera);
 }
 
 
 window.addEventListener('resize', onWindowResize);
 window.addEventListener('pointermove', onPointerMove);
-animate();
+
+window.addEventListener('mousedown',(event)=>{
+  console.log('Mouse pressed at:', event.clientX, event.clientY);
+  if (interactiveObject != null){
+    isDrag = true;
+    controls.enableRotate = false
+  }
+});
+
+window.addEventListener('mouseup',(event)=>{
+  console.log('Mouse released');
+  if (interactiveObject != null){
+    isDrag = false;
+    controls.enableRotate = true;
+  }
+});
+
+
+function create_marker(x,y,z){
+  const geometry_marker = new THREE.SphereGeometry(0.1, 8, 8); // smooth enough
+  const material_marker = new THREE.MeshStandardMaterial({
+    color: 0x000000,           // black
+    roughness: 0.9,
+    metalness: 0.1,
+    wireframe:true
+  });
+  const planet_marker = new THREE.Mesh(geometry_marker, material_marker);
+  planet_marker.position.x = x;
+  planet_marker.position.y = y;
+  planet_marker.position.z = z;
+  
+  scene.add(planet_marker);
+  interactiveObjects.push(planet_marker);
+}
+
+function place_coordinate_marker(){
+
+}
+
+window.addEventListener('keydown', function(event) {
+
+  console.log('Key pressed:', event.key); 
+  console.log('event.clientX:', event.clientX); 
+  console.log(event.code)
+  if (event.code  === 'Space') {
+    console.log('space');
+    //place_marker();
+    // place_coordinate_marker();
+
+    let pos = latLonToVector3(latitude, longitude);
+    create_marker(pos.x,pos.y,pos.z)
+
+
+  }
+
+});
+
+
+
+
+
+
+const pane = new Pane();
+pane.addBinding(MappingConfig, 'key1',{disabled: true });
+
+
+
+
 
 console.log("Planet with hover lat/lon coordinates");
+animate();

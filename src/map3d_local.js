@@ -1,17 +1,69 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
-import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
-// console.log(OrbitControls);
+// import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
+// https://lil-gui.georgealways.com/
+import {Pane} from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
+import van from "https://cdn.jsdelivr.net/gh/vanjs-org/van/public/van-1.6.0.min.js";
+import { ViewportGizmo } from "three-viewport-gizmo";
+const { div } = van.tags;
+// ────────────────────────────────────────────────
+// Define a function named degrees_to_radians that converts degrees to radians.
+function degrees_to_radians(degrees){
+  // Store the value of pi.
+  var pi = Math.PI;
+  // Multiply degrees by pi divided by 180 to convert to radians.
+  return degrees * (pi/180);
+}
 
+// console.log(OrbitControls);
 // grid size
 var grid_size = 32.0;
 var pointer3d = new THREE.Vector3();
 var place_grid = new THREE.Vector3();
 
+const MappingConfig = {
+  myBoolean: true,
+  key1:"B = Build",
+  key2:"X = Delete",
+  key3:"M = Pointer",
+  pointer3d:{x:0,y:0,z:0},
+  grid_pos:{x:0,y:0,z:0},
+  rot:{x:40.0,y:0,z:0}, //36.00
+}
+const state = {
+  entities: [
+    // { id: '1', name: 'Player', speed: 5 },
+    // { id: '2', name: 'Enemy', speed: 3 },
+  ]
+};
+
+const PARAMS = {
+  factor: 50,
+  id:'',
+  selectId:''
+};
+
+var pointerPanel;
+var gridPanel;
+
+var triMarker;
+var ph_plane;
+var tetrahedron;
+var marker;
+var markers = [];
+var isDrag = false;
+
+let selectedMarker = null;
+let dragOffset = new THREE.Vector3();   // world-space offset from click point to marker center
+let dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0); // horizontal plane at y = 0
+
+
+const axesHelper = new THREE.AxesHelper( 5 );
 // Scene setup
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x000022); // dark space feel
+scene.add(axesHelper);
 
 const camera = new THREE.PerspectiveCamera(
   60,
@@ -19,59 +71,98 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   1000
 );
+// camera.position.z = 6;
+camera.position.z = 64;
+camera.position.y = 64;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 document.body.appendChild(renderer.domElement);
-
+// ────────────────────────────────────────────────
+// LIGHTS
+// ────────────────────────────────────────────────
 // Simple light so it doesn't look flat
-const light = new THREE.DirectionalLight(0xffffff, 1.2);
-light.position.set(5, 3, 4);
-scene.add(light);
-scene.add(new THREE.AmbientLight(0x404040));
-
+function setup_lights(){
+  const light = new THREE.DirectionalLight(0xffffff, 1.2);
+  light.position.set(5, 3, 4);
+  scene.add(light);
+  scene.add(new THREE.AmbientLight(0x404040));
+}
+// ────────────────────────────────────────────────
 // OrbitControls
+// ────────────────────────────────────────────────
 const controls = new OrbitControls( camera, renderer.domElement );
+const gizmo = new ViewportGizmo(camera, renderer,{
+  placement: "bottom-right",
+});
+gizmo.attachControls(controls);
 
 // ────────────────────────────────────────────────
 // Raycaster + mouse
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();   // normalized device coords (-1 to +1)
 const intersectionPoint = new THREE.Vector3(); // where we'll store result
-
 // ────────────────────────────────────────────────
 // const geometry = new THREE.BoxGeometry( 2, 2, 2 );
 // const meshMaterial = new THREE.MeshPhongMaterial( { color: 0x156289, emissive: 0x072534, side: THREE.DoubleSide, flatShading: true } );
 // const cube = new THREE.Mesh( geometry, meshMaterial );
 // scene.add( cube );
-
-const size = 1024;
-const divisions = 32;
-const gridHelper = new THREE.GridHelper( size, divisions );
-gridHelper.position.set(16,-1.0,16);
-scene.add( gridHelper );
-
+function create_grid_helper(){
+  const size = 1024;
+  const divisions = 32;
+  const gridHelper = new THREE.GridHelper( size, divisions );
+  gridHelper.position.set(16,-1.0,16);
+  return gridHelper
+}
+// scene.add( create_grid_helper() );
+//-----------------------------------------------
+// Tetrahedron Geometry
+//-----------------------------------------------
+function create_tri_marker(){
+  const t_geometry = new THREE.TetrahedronGeometry(8);
+  // t_geometry.rotateX(Math.PI * 0.5); 
+  // t_geometry.rotateX(degrees_to_radians(40))
+  // t_geometry.rotateX(Math.PI*40); 
+  const t_material = new THREE.MeshBasicMaterial({
+    color: 0xffff00,
+    wireframe:true
+  });
+  const tetrahedron = new THREE.Mesh( t_geometry, t_material );
+  // tetrahedron.rotateX(degrees_to_radians(90));
+  tetrahedron.rotateX(degrees_to_radians(35));
+  // tetrahedron.rotateY(degrees_to_radians(80));
+  tetrahedron.rotateZ(degrees_to_radians(45));
+  const groupMarker = new THREE.Group();
+  tetrahedron.position.set(0,8,0);
+  tetrahedron.userData = {
+    tag:"Pointer"
+  };
+  groupMarker.add(tetrahedron);
+  // groupMarker.userData = {tag:'markPointer'}
+  return groupMarker;
+}
+// triMarker = create_tri_marker();
+// scene.add( triMarker );
 // ────────────────────────────────────────────────
 // PLANE
 // ────────────────────────────────────────────────
-// const p_geometry = new THREE.PlaneGeometry( 32, 32 );
-// const p_material = new THREE.MeshBasicMaterial( { color: 0xffff00, side: THREE.DoubleSide, wireframe:true } );
-// const plane = new THREE.Mesh( p_geometry, p_material );
-// plane.rotateX(degrees_to_radians(90));
-// scene.add( plane );
-
-
-const ph_geometry = new THREE.PlaneGeometry( 32, 32 );
-const ph_material = new THREE.MeshBasicMaterial({ 
-  color: 0x2C5C38, 
-  side: THREE.DoubleSide, 
-  wireframe:true 
-});
-const pg_plane = new THREE.Mesh( ph_geometry, ph_material );
-pg_plane.rotateX(degrees_to_radians(90));
-scene.add( pg_plane );
-
+function create_plane_floor(){
+  const geometry = new THREE.PlaneGeometry( 32, 32 );
+  const material = new THREE.MeshBasicMaterial({ 
+    color: 0x2C5C38, 
+    side: THREE.DoubleSide, 
+    wireframe:true 
+  });
+  const plane = new THREE.Mesh( geometry, material );
+  plane.rotateX(degrees_to_radians(90));
+  return plane;
+}
+// const ph_plane = create_plane_floor();
+// scene.add( ph_plane );
+//-----------------------------------------------
+// CREATE GRID
+//-----------------------------------------------
 function create_grid(){
   const p_geometry = new THREE.PlaneGeometry( 32, 32 );
   const p_material = new THREE.MeshBasicMaterial( {
@@ -85,17 +176,7 @@ function create_grid(){
   scene.add( plane );
   return plane;
 }
-
 // ────────────────────────────────────────────────
-// Define a function named degrees_to_radians that converts degrees to radians.
-function degrees_to_radians(degrees){
-  // Store the value of pi.
-  var pi = Math.PI;
-  // Multiply degrees by pi divided by 180 to convert to radians.
-  return degrees * (pi/180);
-}
-// ────────────────────────────────────────────────
-
 // const loader = new SVGLoader();
 // const data = await loader.loadAsync( 
 //   'whitebox32.svg'
@@ -118,33 +199,29 @@ function degrees_to_radians(degrees){
 // 		group.add( mesh );
 // 	}
 // }
-
 // group.rotateX(degrees_to_radians(90));//pass
 // group.rotateY(degrees_to_radians(90));
 // group.rotateZ(degrees_to_radians(90));
 // scene.add( group );
-
 // let test01 = group.clone();
 // test01.position.x = 38;
 // scene.add( test01 );
-
-// We'll visualize the hit point with a small sphere
-const marker = new THREE.Mesh(
-  new THREE.BoxGeometry(2,2,2),
-  new THREE.MeshBasicMaterial({
-    color: 0xff3366,
-    wireframe:true
-  })
-);
-marker.visible = false;
-scene.add(marker);
+function cube_marker(){
+  const cubeMarker = new THREE.Mesh(
+    new THREE.BoxGeometry(2,2,2),
+    new THREE.MeshBasicMaterial({
+      color: 0xff3366,
+      wireframe:true
+    })
+  );
+  cubeMarker.visible = false;
+  return cubeMarker
+}
+// const marker = cube_marker();
+// scene.add(marker);
 
 // ────────────────────────────────────────────────
 // Animation + rotation
-// camera.position.z = 6;
-camera.position.z = 64;
-camera.position.y = 64;
-
 function update_position_placeholder_tile(){
   if(pointer3d){
     // console.log(pointer3d)
@@ -152,18 +229,28 @@ function update_position_placeholder_tile(){
     let grid_y = Math.round(pointer3d.y / grid_size) * grid_size;
     let grid_z  = Math.round(pointer3d.z / grid_size) * grid_size;
 
+    MappingConfig.grid_pos = {
+      x: grid_x,
+      y: grid_y,
+      z: grid_z
+    };
+
     // console.log("g x:", grid_x, " y:", grid_y, " z:",grid_z);
+    MappingConfig.pointer3d.x = pointer3d.x;
+    MappingConfig.pointer3d.y = pointer3d.y;
+    MappingConfig.pointer3d.z = pointer3d.z;
+    if (pointerPanel) pointerPanel.refresh();
+    if (gridPanel) gridPanel.refresh();
 
     place_grid.set(grid_x, grid_y, grid_z);
 
-    if(pg_plane){
-      pg_plane.position.x = grid_x;
-      // pg_plane.position.y = grid_z;
-      pg_plane.position.z = grid_z;
+    if(ph_plane){
+      ph_plane.position.x = grid_x;
+      // ph_plane.position.y = grid_z;
+      ph_plane.position.z = grid_z;
     }
   }
 }
-
 // ─── Mouse move handler ────────────────────────────────────────
 function onPointerMove(event) {
   // update normalized mouse position
@@ -180,14 +267,14 @@ function onPointerMove(event) {
   // Solve: origin + t * direction = point on plane y = 0
   const t = -origin.y / direction.y;
 
-
-
   if (t > 0.001) {   // avoid division by zero + behind camera
     intersectionPoint.copy(origin).addScaledVector(direction, t);
     pointer3d.copy(intersectionPoint);
     update_position_placeholder_tile()
-    marker.position.copy(intersectionPoint);
-    marker.visible = true;
+    if(marker){
+      // marker.position.copy(intersectionPoint);
+      // marker.visible = true;
+    }
 
     // ─── Here is your desired Vector3 ────────────────────────
     // console.log("Ground position:", intersectionPoint.x.toFixed(2),
@@ -196,9 +283,12 @@ function onPointerMove(event) {
   } else {
     marker.visible = false;
   }
-
+  // raycastMarkerPointer();
 }
 
+// ────────────────────────────────────────────────
+// THREE UPDATE
+// ────────────────────────────────────────────────
 function animate() {
   requestAnimationFrame(animate);
   // gentle rotation
@@ -207,19 +297,21 @@ function animate() {
     controls.update();
   }
   renderer.render(scene, camera);
-}
 
+  gizmo.render();
+}
 // ────────────────────────────────────────────────
 // Resize handler
 function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  gizmo.update();
 }
-
-
+// ────────────────────────────────────────────────
+// PLACE GRID
+// ────────────────────────────────────────────────
 function place_grid_tile(){
-
   // make sure they do not overlap
   let isFound = false;
 
@@ -239,14 +331,26 @@ function place_grid_tile(){
         console.log("2 x:", grid_x2," y:", grid_x2," z:", grid_x2);
         console.log(objModel.position);
       }
-      
     }
   }
   if(isFound == false){
     if(place_grid){
-    let p = create_grid();
-    p.position.set(place_grid.x,place_grid.y,place_grid.z);
-  }
+      let p = create_grid();
+      p.position.set(place_grid.x,place_grid.y,place_grid.z);
+      // 
+      console.log("mesh");
+      console.log(p);
+
+      state.entities.push({
+        id:p.uuid,
+        name:p.uuid,
+        speed:0,
+        x: p.position.x,
+        y: p.position.y,
+        z: p.position.z,
+      })
+      updateEntityList();
+    }
   }
 }
 
@@ -275,40 +379,229 @@ function delete_grid_tile(){
     }
   }
 }
+// ────────────────────────────────────────────────
+// PLACE MARK POINTER
+// ────────────────────────────────────────────────
+function placeMarkPointer(){
+  const triMarker = create_tri_marker();
+  triMarker.position.copy(pointer3d);
+  scene.add(triMarker);
+  markers.push(triMarker);
+}
+
+// ────────────────────────────────────────────────
+// SET UP SCENE
+// ────────────────────────────────────────────────
+function setup_scene(){
+  setup_lights();
+  scene.add( create_grid_helper() );
+  triMarker = create_tri_marker();
+  tetrahedron = triMarker;
+  scene.add( triMarker );
+  ph_plane = create_plane_floor();
+  scene.add( ph_plane );
+  marker = cube_marker();
+  scene.add(marker);
+}
+
+setup_scene();
 
 // ────────────────────────────────────────────────
 // Events
+// ────────────────────────────────────────────────
+// Called on mousedown
+function onMouseDown(event) {
+  if (event.button !== 0) return; // left click only
+
+  pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+  pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  raycaster.setFromCamera(pointer, camera);
+
+  const intersects = raycaster.intersectObjects(markers, true); // true = recursive (in case you have groups)
+
+  if (intersects.length > 0) {
+    const obj = intersects[0].object;
+    if(obj.userData.tag === "Pointer"){
+      // selectedMarker = obj.userData.tag === "Pointer" ? obj.parent : obj.parent; // your group
+      selectedMarker = obj.parent; // your group
+
+    }
+    
+
+    if (selectedMarker) {
+      controls.enabled = false;           // disable orbit while dragging
+      isDrag = true;
+
+      // Calculate exact offset so the marker doesn't jump
+      const intersectPoint = intersects[0].point;
+      // dragOffset.copy(selectedMarker.position).sub(intersectPoint);
+      selectedMarker.position.copy(intersectPoint);
+
+      // Optional: if you want to drag from the exact clicked height instead of forcing y=0
+      // dragPlane.setFromNormalAndCoplanarPoint(new THREE.Vector3(0,1,0), intersectPoint);
+    }
+  }
+}
+// Called on mouse move (only the drag part)
+function onMouseMoveDrag(event) {
+  if (!selectedMarker || !isDrag) return;
+
+  pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+  pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  raycaster.setFromCamera(pointer, camera);
+
+  const intersectPoint = new THREE.Vector3();
+  if (raycaster.ray.intersectPlane(dragPlane, intersectPoint)) {
+    // Apply offset so it feels natural
+    selectedMarker.position.copy(intersectPoint).add(dragOffset);
+
+    // Optional: snap to your grid while dragging
+    // selectedMarker.position.x = Math.round(selectedMarker.position.x / grid_size) * grid_size;
+    // selectedMarker.position.z = Math.round(selectedMarker.position.z / grid_size) * grid_size;
+    // (y stays 0 or whatever your marker base is)
+  }
+}
+// Called on mouse up
+function onMouseUp() {
+  if (selectedMarker) {
+    controls.enabled = true;
+    isDrag = false;
+    selectedMarker = null;
+  }
+}
+// ────────────────────────────────────────────────
+// Attach the new listeners
+// ────────────────────────────────────────────────
+window.addEventListener('mousedown', onMouseDown);
+window.addEventListener('mousemove', onMouseMoveDrag);   // keep your existing onPointerMove for the pointer3d / tile preview
+window.addEventListener('mouseup', onMouseUp);
+
+
 window.addEventListener('resize', onWindowResize);
 window.addEventListener('pointermove', onPointerMove);
-animate();
-
-
 window.addEventListener('keydown', (event)=>{
-  console.log(event.code);
-
-
+  // console.log(event.code);
   if(event.code == 'KeyB'){
     place_grid_tile();
   }
-
   if(event.code == 'KeyX'){
     delete_grid_tile();
   }
+  if(event.code == 'KeyM'){
+    placeMarkPointer();
+  }
+});
+// animate();
+
+const pane = new Pane();
+pane.addBinding(MappingConfig, 'key1',{disabled: true });
+pane.addBinding(MappingConfig, 'key2',{disabled: true });
+pane.addBinding(MappingConfig, 'key3',{disabled: true });
+
+pointerPanel = pane.addBinding(MappingConfig, 'pointer3d',{disabled: true });
+gridPanel = pane.addBinding(MappingConfig, 'grid_pos',{disabled: true });
+
+gridPanel = pane.addBinding(MappingConfig.rot, 'x',{}).on('change', (ev) => {
+  // console.log(ev);
+  // tetrahedron.rotateX(degrees_to_radians(ev.value));
+  tetrahedron.rotation.x = degrees_to_radians(ev.value)
 });
 
-// https://lil-gui.georgealways.com/
-const gui = new GUI();
-const mapping_config = {
-  myBoolean: true,
-  key1:"B = Build",
-  key2:"X = Delete",
+gridPanel = pane.addBinding(MappingConfig.rot, 'y',{}).on('change', (ev) => {
+  // console.log(ev);
+  // tetrahedron.rotateY(degrees_to_radians(ev.value));
+  tetrahedron.rotation.y = degrees_to_radians(ev.value)
+});
+
+gridPanel = pane.addBinding(MappingConfig.rot, 'z',{}).on('change', (ev) => {
+  // console.log(ev);
+  // tetrahedron.rotateZ(degrees_to_radians(ev.value));
+  tetrahedron.rotation.z = degrees_to_radians(ev.value)
+});
+
+
+// gridPanel = pane.addBinding(MappingConfig, 'rot',{}).on('change', (ev) => {
+//   console.log(ev);
+//   tetrahedron.rotateX(degrees_to_radians(ev.value.x));
+//   // tetrahedron.rotateY(degrees_to_radians(MappingConfig.rot.y));
+//   // tetrahedron.rotateZ(degrees_to_radians(ev.value.z));
+//   // tetrahedron.rotation.x = degrees_to_radians(ev.value.x) // 36.0
+// });
+const entityEl = div({style:`position:fixed;top:0;left:0;`});
+van.add( document.body, entityEl);
+
+const paneEntity = new Pane({container:entityEl});
+paneEntity.addBinding(PARAMS, 'id');
+paneEntity.addBinding(PARAMS, 'selectId');
+let entityFolders = []; // Track folders to dispose them later
+// const btn_delete = paneEntity.addButton({
+//   title: 'Delete',
+// });
+// const btn_update = paneEntity.addButton({
+//   title: 'Update',
+// });
+paneEntity.addButton({ title: '＋ Add New Entity' }).on('click', () => {
+  const newId = (state.entities.length + 1).toString();
+  state.entities.push({ id: newId, name: `Entity ${newId}`, speed: 0 });
+  updateEntityList();
+});
+const folderEntities = paneEntity.addFolder({
+  title: 'Entities',
+});
+// console.log(folderEntities);
+// handle scroll height panel mod fixed.
+folderEntities.element.style["max-height"] = '280px';
+folderEntities.element.style["overflow-y"] = 'auto';
+
+function updateEntityList() {
+  // Clear existing entity folders
+  entityFolders.forEach(f => f.dispose());
+  entityFolders = [];
+
+  // Re-add a folder for each entity in the current list
+  state.entities.forEach((entity, index) => {
+    const folder = folderEntities.addFolder({
+      // title: `${entity.name} (ID: ${entity.id})`,
+       title: `${entity.name}`,
+      expanded: false,
+    });
+
+    folder.addBinding(entity, 'name', { label: 'Name' });
+    // folder.addBinding(entity, 'speed', { min: 0, max: 10, label: 'Speed' });
+    folder.addBinding(entity, 'x', {  });
+    folder.addBinding(entity, 'y', {  });
+    folder.addBinding(entity, 'z', {  });
+
+    folder.addButton({ title: 'Select' }).on('click', () => {
+      console.log(entity);
+      axesHelper.position.set(entity.x,entity.y,entity.z);
+    })
+    // Add a delete button inside the folder
+    folder.addButton({ title: 'Remove Entity' }).on('click', () => {
+      state.entities.splice(index, 1); // Remove from data
+      updateEntityList();             // Refresh UI
+
+      scene.traverse((obj)=>{
+        if(obj){
+          if(obj.uuid == entity.id){
+            scene.remove(obj);
+          }
+        }
+        
+      });
+      
+    });
+
+    entityFolders.push(folder);
+  });
 }
-gui.add( mapping_config, 'myBoolean' );  // Checkbox
-
-const hkfolder = gui.addFolder( 'Hot Keys' );
-hkfolder.add(mapping_config,'key1').disable();
-hkfolder.add(mapping_config,'key2').disable();
 
 
+// const folderMarkers = paneEntity.addFolder({
+//   title: 'Markers',
+// });
+animate();
 console.log("Planet with hover lat/lon coordinates");
 
