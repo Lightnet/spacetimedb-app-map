@@ -165,7 +165,6 @@ spacetime sql --server local spacetime-app-map "SELECT * FROM message"
 spacetime sql --server local spacetime-app-map "SELECT * FROM task"
 ```
 
-
 ```
 spacetime sql --server local spacetime-app-map "SELECT * FROM reminder"
 ```
@@ -174,7 +173,13 @@ spacetime sql --server local spacetime-app-map "SELECT * FROM reminder"
 spacetime sql --server local spacetime-app-map "SELECT * FROM planet3d"
 ```
 
+```
+spacetime sql --server local spacetime-app-map "SELECT * FROM map_mark"
+```
 
+```
+spacetime sql --server local spacetime-app-map "SELECT * FROM map_tile"
+```
 
 ## Notes:
 - Note the server module must match on export client module else it will error when api calls.
