@@ -1,11 +1,11 @@
-// Table Planet 
-
+//-----------------------------------------------
+// Table Planet  
+//-----------------------------------------------
 import { schema, table, t, SenderError  } from 'spacetimedb/server';
 import { Coordinates } from '../types';
 // ----------------------------------------------
 // Planet
 // ----------------------------------------------
-
 export const Planet = table(
   { name: 'planet', public: true },
   {
@@ -18,7 +18,9 @@ export const Planet = table(
     created_at: t.timestamp(),
   }
 );
-
+//-----------------------------------------------
+// 
+//-----------------------------------------------
 export const PlanetCoordinate = table(
   { name: 'planet_coordinate', public: true },
   {
@@ -27,7 +29,9 @@ export const PlanetCoordinate = table(
     created_at: t.timestamp(),
   }
 );
-
+//-----------------------------------------------
+// 
+//-----------------------------------------------
 export const PlanetMarker = table(
   { name: 'planet_marker', public: true },
   {
@@ -36,3 +40,6 @@ export const PlanetMarker = table(
     created_at: t.timestamp(),
   }
 );
+//-----------------------------------------------
+// 
+//-----------------------------------------------

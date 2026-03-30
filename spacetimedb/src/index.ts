@@ -1,15 +1,18 @@
+//-----------------------------------------------
 // main entry point
-
+//-----------------------------------------------
 import spacetimedb, {init, onConnect, onDisconnect} from './module';
-
+//-----------------------------------------------
+// 
+//-----------------------------------------------
 import {
     create_planet_marker,
     update_planet_maker,
     delete_planet_marker,
-    
 } from './reducers/reducers_planet';
-
-
+//-----------------------------------------------
+// 
+//-----------------------------------------------
 import { 
     create_map_tile,
     update_map_tile,
@@ -17,7 +20,9 @@ import {
     create_map_marker,
     delete_map_marker,
 } from './reducers/reducers_mapping';
-
+//-----------------------------------------------
+// 
+//-----------------------------------------------
 export {
     init,
     onConnect,
@@ -33,5 +38,10 @@ export {
     update_planet_maker,
     delete_planet_marker,
 }
-
+//-----------------------------------------------
+// 
+//-----------------------------------------------
 export default spacetimedb;
+//-----------------------------------------------
+// 
+//-----------------------------------------------

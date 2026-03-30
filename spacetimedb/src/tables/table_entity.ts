@@ -1,5 +1,6 @@
-
-
+//-----------------------------------------------
+// 
+//-----------------------------------------------
 import { schema, table, t, SenderError  } from 'spacetimedb/server';
 // https://spacetimedb.com/docs/tables/
 export const MapTile = table(
@@ -10,6 +11,9 @@ export const MapTile = table(
     created_at: t.timestamp(),
   }
 );
+//-----------------------------------------------
+// 
+//-----------------------------------------------
 /*
 Player          PlayerState         PlayerStats         PlayerSettings
 ├── id     ←──  ├── player_id       ├── player_id       ├── player_id

@@ -1,9 +1,10 @@
+//-----------------------------------------------
 // 
-
-import { Timestamp } from 'spacetimedb';
+//-----------------------------------------------
+// import { Timestamp } from 'spacetimedb';
 import { schema, table, t, SenderError  } from 'spacetimedb/server';
 import spacetimedb from '../module';
-import { Coordinates } from '../types';
+// import { Coordinates } from '../types';
 // ----------------------------------------------
 // Planet
 // ----------------------------------------------
@@ -40,7 +41,6 @@ export const update_planet_maker = spacetimedb.reducer(
       ctx.db.Planet.id.update(planet3d);
     }
 });
-
 // ----------------------------------------------
 // DELETE PLANET MARKER 
 // ----------------------------------------------
@@ -51,3 +51,6 @@ export const delete_planet_marker = spacetimedb.reducer(
     const deleted = ctx.db.PlanetMarker.id.delete(id);
     console.log(`Deleted Planet Mark: ${deleted} row(s)`);
 });
+//-----------------------------------------------
+// 
+//-----------------------------------------------

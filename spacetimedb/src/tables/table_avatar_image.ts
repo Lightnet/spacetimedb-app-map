@@ -1,7 +1,12 @@
-import { Timestamp } from 'spacetimedb';
+//-----------------------------------------------
+// 
+//-----------------------------------------------
+// import { Timestamp } from 'spacetimedb';
 import { schema, table, t, SenderError  } from 'spacetimedb/server';
-import spacetimedb from '../module';
-
+// import spacetimedb from '../module';
+//-----------------------------------------------
+// 
+//-----------------------------------------------
 export const userAvatar = table(
   { name: 'user_avatar', public: true },
   {
@@ -11,3 +16,6 @@ export const userAvatar = table(
     uploadedAt: t.timestamp(),
   }
 );
+//-----------------------------------------------
+// 
+//-----------------------------------------------

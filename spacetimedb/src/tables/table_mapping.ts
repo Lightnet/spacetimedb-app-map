@@ -1,12 +1,11 @@
+//-----------------------------------------------
 // mapping
-
+//-----------------------------------------------
 // import { Timestamp } from 'spacetimedb';
 import { schema, table, t, SenderError  } from 'spacetimedb/server';
 import { Coordinates } from '../types';
 // import spacetimedb from '../module';
-
 // https://spacetimedb.com/docs/tables/
-
 //-----------------------------------------------
 // MAP TILE
 //-----------------------------------------------
@@ -31,7 +30,9 @@ export const MapMarker = table(
     created_at: t.timestamp(),
   }
 );
-
+//-----------------------------------------------
+// 
+//-----------------------------------------------
 export const Icon2D = table(
   { name: 'icon_2d', public: true },
   {

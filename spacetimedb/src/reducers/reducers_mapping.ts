@@ -1,6 +1,6 @@
-// 
-
+//-----------------------------------------------
 // import { Timestamp } from 'spacetimedb';
+//-----------------------------------------------
 import { schema, table, t, SenderError  } from 'spacetimedb/server';
 import spacetimedb from '../module';
 // ----------------------------------------------
@@ -71,3 +71,6 @@ export const delete_map_marker = spacetimedb.reducer(
     ctx.db.MapMarker.id.delete(id);
   }
 );
+// ----------------------------------------------
+// 
+// ----------------------------------------------
