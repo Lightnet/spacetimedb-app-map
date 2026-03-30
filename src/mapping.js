@@ -36,7 +36,17 @@ const MappingConfig = {
   pointer3d:{x:0,y:0,z:0},
   grid_pos:{x:0,y:0,z:0},
   rot:{x:40.0,y:0,z:0}, //36.00
+  offset_marker:{x:0,y:4,z:0},
+  markerFolders: [],
+  markerRows: [],
+  gridFolders: [],
+  gridRows: [],
 }
+
+let paneMarker;
+let paneGrid;
+let paneProps;
+
 const state = {
   entities: [
     // { id: '1', name: 'Player', speed: 5 },
@@ -49,13 +59,11 @@ const PARAMS = {
   id:'',
   selectId:''
 };
-
 var pointerPanel;
 var gridPanel;
-
-var triMarker;
+// var triMarker;
 var ph_plane;
-var tetrahedron;
+// var tetrahedron;
 var marker;
 var markers = [];
 var isDrag = false;
@@ -63,6 +71,14 @@ var isDrag = false;
 let selectedMarker = null;
 let dragOffset = new THREE.Vector3();   // world-space offset from click point to marker center
 let dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0); // horizontal plane at y = 0
+
+// ────────────────────────────────────────────────
+// Raycaster + mouse
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();   // normalized device coords (-1 to +1)
+const intersectionPoint = new THREE.Vector3(); // where we'll store result
+
+setup_editor_panel();
 
 const conn = DbConnection.builder()
   .withUri(HOST)
@@ -101,8 +117,28 @@ function setupDBUser(){
 //-----------------------------------------------
 // MAP MARKER
 //-----------------------------------------------
+
+function update_pane_marker(row){
+  MappingConfig.markerFolders.forEach(f => f.dispose());
+  MappingConfig.markerFolders = [];
+  MappingConfig.markerRows.forEach((entity, index) => {
+    console.log("MappingConfig.markerRows entity:", entity)
+    const folder = paneMarker.addFolder({
+      // title: `${entity.name} (ID: ${entity.id})`,
+      title: `${entity.id} Marker`,
+      expanded: false,
+    });
+    // folder.addBinding(entity, 'id', { label: 'Name' });
+    folder.addBinding(entity, 'position', {  });
+    folder.addButton({title:'Select'}).on('click',()=>{
+      axesHelper.position.set(entity.position.x,entity.position.y,entity.position.z);
+    });
+    MappingConfig.markerFolders.push(folder);
+  });
+}
+
 function onInsert_MapMarker(ctx, row){
-  console.log("map maker:", row);
+  // console.log("map maker:", row);
   let isFound = false;
 
   for (let i = 0; i < scene.children.length; i++) {
@@ -114,15 +150,21 @@ function onInsert_MapMarker(ctx, row){
     // Perform actions
   }
   if(isFound==false){
-    const triMarker = create_tri_marker();
-    triMarker.position.set(row.position.x, row.position.y, row.position.z);
-    triMarker.userData.row = row;
-    console.log(triMarker.userData);
-    scene.add(triMarker);
-    markers.push(triMarker);
+    const _marker = create_tri_marker();
+    _marker.position.set(row.position.x, row.position.y, row.position.z);
+    _marker.userData.row = row;
+    // console.log(_marker.userData);
+    scene.add(_marker);
+    markers.push(_marker);
+    const isDuplicate = MappingConfig.markerRows.some(r => r.id === row.id);
+    // console.log("isDuplicate:", isDuplicate);
+    if (!isDuplicate) {
+      MappingConfig.markerRows.push(row);
+    }
+    update_pane_marker();
   }
 }
-
+//need to make sure there no override when update while move.
 function onUpdate_MapMarker(ctx, oldRow, newRow){
 
 
@@ -155,8 +197,27 @@ function setupDBMapping(){
 //-----------------------------------------------
 // MAP GRID
 //-----------------------------------------------
+function update_pane_grids(row){
+  MappingConfig.gridFolders.forEach(f => f.dispose());
+  MappingConfig.gridFolders = [];
+  MappingConfig.gridRows.forEach((entity, index) => {
+    // console.log("MappingConfig.gridRows entity:", entity)
+    const folder = paneGrid.addFolder({
+      // title: `${entity.name} (ID: ${entity.id})`,
+      title: `${entity.id} Tile`,
+      expanded: false,
+    });
+    // folder.addBinding(entity, 'id', { label: 'Name' });
+    folder.addBinding(entity, 'position', {  });
+    folder.addButton({title:'Select'}).on('click',()=>{
+      axesHelper.position.set(entity.position.x,entity.position.y,entity.position.z);
+    });
+    MappingConfig.gridFolders.push(folder);
+  });
+}
+
 function onInsert_MapTile(ctx, row){
-  console.log("map tile:", row);
+  // console.log("map tile:", row);
   let isFound = false;
 
   for (let i = 0; i < scene.children.length; i++) {
@@ -173,6 +234,12 @@ function onInsert_MapTile(ctx, row){
     _tileMap.userData.row = row;
     scene.add(_tileMap);
     // markers.push(_tileMap);
+    const isDuplicate = MappingConfig.gridRows.some(r => r.id === row.id);
+    // console.log("isDuplicate:", isDuplicate);
+    if (!isDuplicate) {
+      MappingConfig.gridRows.push(row);
+    }
+    update_pane_grids();
   }
 }
 
@@ -189,7 +256,7 @@ function setupDBMapTile(){
   MapTileSub = conn
     .subscriptionBuilder()
     .onApplied((ctx) => {
-      console.log("map tile");
+      // console.log("map tile");
       ctx.db.MapTile.onInsert(onInsert_MapTile);
       ctx.db.MapTile.onUpdate(onUpdate_MapTile);
       ctx.db.MapTile.onDelete(onDelete_MapTile);
@@ -201,29 +268,39 @@ function setupDBMapTile(){
   // console.log(tables)
 }
 
+//-----------------------------------------------
+// THRREE JS
+//-----------------------------------------------
 
+var axesHelper = null;
+var scene;
+var camera;
+var renderer;
+var controls;
+var gizmo;
 
+function setup_renderer(){
+  axesHelper = new THREE.AxesHelper( 5 );
+  // Scene setup
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x000022); // dark space feel
+  scene.add(axesHelper);
 
-const axesHelper = new THREE.AxesHelper( 5 );
-// Scene setup
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x000022); // dark space feel
-scene.add(axesHelper);
+  camera = new THREE.PerspectiveCamera(
+    60,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    1000
+  );
+  // camera.position.z = 6;
+  camera.position.z = 64;
+  camera.position.y = 64;
 
-const camera = new THREE.PerspectiveCamera(
-  60,
-  window.innerWidth / window.innerHeight,
-  0.1,
-  1000
-);
-// camera.position.z = 6;
-camera.position.z = 64;
-camera.position.y = 64;
-
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
-document.body.appendChild(renderer.domElement);
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  document.body.appendChild(renderer.domElement);
+}
 // ────────────────────────────────────────────────
 // LIGHTS
 // ────────────────────────────────────────────────
@@ -237,22 +314,14 @@ function setup_lights(){
 // ────────────────────────────────────────────────
 // OrbitControls
 // ────────────────────────────────────────────────
-const controls = new OrbitControls( camera, renderer.domElement );
-const gizmo = new ViewportGizmo(camera, renderer,{
-  placement: "bottom-right",
-});
-gizmo.attachControls(controls);
-
+function setup_camera_controllers(){
+  controls = new OrbitControls( camera, renderer.domElement );
+  gizmo = new ViewportGizmo(camera, renderer,{
+    placement: "bottom-right",
+  });
+  gizmo.attachControls(controls);
+}
 // ────────────────────────────────────────────────
-// Raycaster + mouse
-const raycaster = new THREE.Raycaster();
-const pointer = new THREE.Vector2();   // normalized device coords (-1 to +1)
-const intersectionPoint = new THREE.Vector3(); // where we'll store result
-// ────────────────────────────────────────────────
-// const geometry = new THREE.BoxGeometry( 2, 2, 2 );
-// const meshMaterial = new THREE.MeshPhongMaterial( { color: 0x156289, emissive: 0x072534, side: THREE.DoubleSide, flatShading: true } );
-// const cube = new THREE.Mesh( geometry, meshMaterial );
-// scene.add( cube );
 function create_grid_helper(){
   const size = 1024;
   const divisions = 32;
@@ -260,35 +329,24 @@ function create_grid_helper(){
   gridHelper.position.set(16,-1.0,16);
   return gridHelper
 }
-// scene.add( create_grid_helper() );
 //-----------------------------------------------
 // Tetrahedron Geometry
 //-----------------------------------------------
 function create_tri_marker(){
-  const t_geometry = new THREE.TetrahedronGeometry(8);
-  // t_geometry.rotateX(Math.PI * 0.5); 
-  // t_geometry.rotateX(degrees_to_radians(40))
-  // t_geometry.rotateX(Math.PI*40); 
+  const t_geometry = new THREE.ConeGeometry( 4, 8, 4 );
   const t_material = new THREE.MeshBasicMaterial({
     color: 0xffff00,
     wireframe:true
   });
-  const tetrahedron = new THREE.Mesh( t_geometry, t_material );
-  // tetrahedron.rotateX(degrees_to_radians(90));
-  tetrahedron.rotateX(degrees_to_radians(35));
-  // tetrahedron.rotateY(degrees_to_radians(80));
-  tetrahedron.rotateZ(degrees_to_radians(45));
+  const _marker = new THREE.Mesh( t_geometry, t_material );
+  _marker.rotation.x = Math.PI;
   const groupMarker = new THREE.Group();
-  tetrahedron.position.set(0,8,0);
-  tetrahedron.userData = {
-    tag:"Pointer"
-  };
-  groupMarker.add(tetrahedron);
+  _marker.position.set(0,4,0);
+  _marker.userData = {tag:"Pointer"};
+  groupMarker.add(_marker);
   // groupMarker.userData = {tag:'markPointer'}
   return groupMarker;
 }
-// triMarker = create_tri_marker();
-// scene.add( triMarker );
 // ────────────────────────────────────────────────
 // PLANE
 // ────────────────────────────────────────────────
@@ -303,8 +361,6 @@ function create_plane_floor(){
   plane.rotateX(degrees_to_radians(90));
   return plane;
 }
-// const ph_plane = create_plane_floor();
-// scene.add( ph_plane );
 //-----------------------------------------------
 // CREATE GRID
 //-----------------------------------------------
@@ -333,7 +389,6 @@ function cube_marker(){
   cubeMarker.visible = false;
   return cubeMarker
 }
-
 // ────────────────────────────────────────────────
 // Animation + rotation
 function update_position_placeholder_tile(){
@@ -399,7 +454,6 @@ function onPointerMove(event) {
   }
   // raycastMarkerPointer();
 }
-
 // ────────────────────────────────────────────────
 // THREE UPDATE
 // ────────────────────────────────────────────────
@@ -534,7 +588,6 @@ function raycast_delete_marker(){
   }
 
 }
-
 // ────────────────────────────────────────────────
 // PLACE MARK POINTER
 // ────────────────────────────────────────────────
@@ -553,24 +606,21 @@ function placeMarkPointer(){
   scene.add(triMarker);
   markers.push(triMarker);
 }
-
 // ────────────────────────────────────────────────
 // SET UP SCENE
 // ────────────────────────────────────────────────
 function setup_scene(){
   setup_lights();
   scene.add( create_grid_helper() );
-  triMarker = create_tri_marker();
-  tetrahedron = triMarker;
-  scene.add( triMarker );
+  // triMarker = create_tri_marker();
+  // tetrahedron = triMarker;
+  // scene.add( triMarker );
   ph_plane = create_plane_floor();
   scene.add( ph_plane );
   marker = cube_marker();
   scene.add(marker);
+  setup_camera_controllers()
 }
-
-setup_scene();
-
 // ────────────────────────────────────────────────
 // Events
 // ────────────────────────────────────────────────
@@ -651,115 +701,140 @@ window.addEventListener('keydown', (event)=>{
     placeMarkPointer();
   }
 });
-// animate();
-
-const pane = new Pane();
-pane.addBinding(MappingConfig, 'key1',{disabled: true });
-pane.addBinding(MappingConfig, 'key2',{disabled: true });
-pane.addBinding(MappingConfig, 'key3',{disabled: true });
-
-pointerPanel = pane.addBinding(MappingConfig, 'pointer3d',{disabled: true });
-gridPanel = pane.addBinding(MappingConfig, 'grid_pos',{disabled: true });
-
-gridPanel = pane.addBinding(MappingConfig.rot, 'x',{}).on('change', (ev) => {
-  // console.log(ev);
-  // tetrahedron.rotateX(degrees_to_radians(ev.value));
-  tetrahedron.rotation.x = degrees_to_radians(ev.value)
-});
-
-gridPanel = pane.addBinding(MappingConfig.rot, 'y',{}).on('change', (ev) => {
-  // console.log(ev);
-  // tetrahedron.rotateY(degrees_to_radians(ev.value));
-  tetrahedron.rotation.y = degrees_to_radians(ev.value)
-});
-
-gridPanel = pane.addBinding(MappingConfig.rot, 'z',{}).on('change', (ev) => {
-  // console.log(ev);
-  // tetrahedron.rotateZ(degrees_to_radians(ev.value));
-  tetrahedron.rotation.z = degrees_to_radians(ev.value)
-});
 
 
-// gridPanel = pane.addBinding(MappingConfig, 'rot',{}).on('change', (ev) => {
-//   console.log(ev);
-//   tetrahedron.rotateX(degrees_to_radians(ev.value.x));
-//   // tetrahedron.rotateY(degrees_to_radians(MappingConfig.rot.y));
-//   // tetrahedron.rotateZ(degrees_to_radians(ev.value.z));
-//   // tetrahedron.rotation.x = degrees_to_radians(ev.value.x) // 36.0
-// });
-const entityEl = div({style:`position:fixed;top:0;left:0;`});
-van.add( document.body, entityEl);
 
-const paneEntity = new Pane({container:entityEl});
-paneEntity.addBinding(PARAMS, 'id');
-paneEntity.addBinding(PARAMS, 'selectId');
-let entityFolders = []; // Track folders to dispose them later
-// const btn_delete = paneEntity.addButton({
-//   title: 'Delete',
-// });
-// const btn_update = paneEntity.addButton({
-//   title: 'Update',
-// });
-paneEntity.addButton({ title: '＋ Add New Entity' }).on('click', () => {
-  const newId = (state.entities.length + 1).toString();
-  state.entities.push({ id: newId, name: `Entity ${newId}`, speed: 0 });
-  updateEntityList();
-});
-const folderEntities = paneEntity.addFolder({
-  title: 'Entities',
-});
-// console.log(folderEntities);
-// handle scroll height panel mod fixed.
-folderEntities.element.style["max-height"] = '280px';
-folderEntities.element.style["overflow-y"] = 'auto';
 
-function updateEntityList() {
-  // Clear existing entity folders
-  entityFolders.forEach(f => f.dispose());
-  entityFolders = [];
 
-  // Re-add a folder for each entity in the current list
-  state.entities.forEach((entity, index) => {
-    const folder = folderEntities.addFolder({
-      // title: `${entity.name} (ID: ${entity.id})`,
-       title: `${entity.name}`,
-      expanded: false,
-    });
 
-    folder.addBinding(entity, 'name', { label: 'Name' });
-    // folder.addBinding(entity, 'speed', { min: 0, max: 10, label: 'Speed' });
-    folder.addBinding(entity, 'x', {  });
-    folder.addBinding(entity, 'y', {  });
-    folder.addBinding(entity, 'z', {  });
+function setup_editor_panel(){
+  const pane = new Pane();
+  const hotKeyFolder = pane.addFolder({title: 'Hot Keys'});
+  hotKeyFolder.addBinding(MappingConfig, 'key1',{disabled: true });
+  hotKeyFolder.addBinding(MappingConfig, 'key2',{disabled: true });
+  hotKeyFolder.addBinding(MappingConfig, 'key3',{disabled: true });
 
-    folder.addButton({ title: 'Select' }).on('click', () => {
-      console.log(entity);
-      axesHelper.position.set(entity.x,entity.y,entity.z);
-    })
-    // Add a delete button inside the folder
-    folder.addButton({ title: 'Remove Entity' }).on('click', () => {
-      state.entities.splice(index, 1); // Remove from data
-      updateEntityList();             // Refresh UI
+  const gridFolder = pane.addFolder({title: 'Position'});
+  pointerPanel = gridFolder.addBinding(MappingConfig, 'pointer3d',{disabled: true });
+  gridPanel = gridFolder.addBinding(MappingConfig, 'grid_pos',{disabled: true });
 
-      scene.traverse((obj)=>{
-        if(obj){
-          if(obj.uuid == entity.id){
-            scene.remove(obj);
+
+  const rotFolder = pane.addFolder({title: 'Rotate'});
+  gridPanel = rotFolder.addBinding(MappingConfig.rot, 'x',{}).on('change', (ev) => {
+    // console.log(ev);
+    // tetrahedron.rotateX(degrees_to_radians(ev.value));
+    tetrahedron.rotation.x = degrees_to_radians(ev.value)
+  });
+  gridPanel = rotFolder.addBinding(MappingConfig.rot, 'y',{}).on('change', (ev) => {
+    // console.log(ev);
+    // tetrahedron.rotateY(degrees_to_radians(ev.value));
+    tetrahedron.rotation.y = degrees_to_radians(ev.value)
+  });
+  gridPanel = rotFolder.addBinding(MappingConfig.rot, 'z',{}).on('change', (ev) => {
+    // console.log(ev);
+    // tetrahedron.rotateZ(degrees_to_radians(ev.value));
+    tetrahedron.rotation.z = degrees_to_radians(ev.value)
+  });
+
+  const entityEl = div({style:`position:fixed;top:0;left:0;`});
+  van.add( document.body, entityEl);
+
+  const paneEntity = new Pane({container:entityEl});
+  paneEntity.addBinding(PARAMS, 'id');
+  paneEntity.addBinding(PARAMS, 'selectId');
+  let entityFolders = []; // Track folders to dispose them later
+  // const btn_delete = paneEntity.addButton({
+  //   title: 'Delete',
+  // });
+  // const btn_update = paneEntity.addButton({
+  //   title: 'Update',
+  // });
+
+  paneProps = paneEntity.addFolder({
+    title: 'Props',
+  });
+
+  paneMarker = paneEntity.addFolder({
+    title: 'Markers',
+  });
+  paneMarker.element.style["max-height"] = '280px';
+  paneMarker.element.style["overflow-y"] = 'auto';
+
+  paneGrid = paneEntity.addFolder({
+    title: 'Grids',
+  });
+  paneGrid.element.style["max-height"] = '280px';
+  paneGrid.element.style["overflow-y"] = 'auto';
+
+
+  paneEntity.addButton({ title: '＋ Add New Entity' }).on('click', () => {
+    const newId = (state.entities.length + 1).toString();
+    state.entities.push({ id: newId, name: `Entity ${newId}`, speed: 0 });
+    updateEntityList();
+  });
+  const folderEntities = paneEntity.addFolder({
+    title: 'Entities',
+  });
+  // console.log(folderEntities);
+  // handle scroll height panel mod fixed.
+  folderEntities.element.style["max-height"] = '280px';
+  folderEntities.element.style["overflow-y"] = 'auto';
+
+  function updateEntityList() {
+    // Clear existing entity folders
+    entityFolders.forEach(f => f.dispose());
+    entityFolders = [];
+
+    // Re-add a folder for each entity in the current list
+    state.entities.forEach((entity, index) => {
+      const folder = folderEntities.addFolder({
+        // title: `${entity.name} (ID: ${entity.id})`,
+        title: `${entity.name}`,
+        expanded: false,
+      });
+
+      folder.addBinding(entity, 'name', { label: 'Name' });
+      // folder.addBinding(entity, 'speed', { min: 0, max: 10, label: 'Speed' });
+      folder.addBinding(entity, 'x', {  });
+      folder.addBinding(entity, 'y', {  });
+      folder.addBinding(entity, 'z', {  });
+
+      folder.addButton({ title: 'Select' }).on('click', () => {
+        console.log(entity);
+        axesHelper.position.set(entity.x,entity.y,entity.z);
+      })
+      // Add a delete button inside the folder
+      folder.addButton({ title: 'Remove Entity' }).on('click', () => {
+        state.entities.splice(index, 1); // Remove from data
+        updateEntityList();             // Refresh UI
+
+        // scene.traverse((obj)=>{
+        //   if(obj){
+        //     if(obj.uuid == entity.id){
+        //       scene.remove(obj);
+        //     }
+        //   }
+        // });
+        for (const child of scene.children()){
+          if(child){
+            if(child.uuid == entity.id){
+              scene.remove(child);
+            }
           }
         }
-        
       });
-      
+      entityFolders.push(folder);
     });
+  }
 
-    entityFolders.push(folder);
-  });
+  // const folderMarkers = paneEntity.addFolder({
+  //   title: 'Markers',
+  // });
 }
 
-
-// const folderMarkers = paneEntity.addFolder({
-//   title: 'Markers',
-// });
+setup_renderer();
+setup_scene(); 
+// setup_editor_panel();
 animate();
 console.log("Planet with hover lat/lon coordinates");
 
