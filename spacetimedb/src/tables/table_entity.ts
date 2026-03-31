@@ -3,11 +3,11 @@
 //-----------------------------------------------
 import { schema, table, t, SenderError  } from 'spacetimedb/server';
 // https://spacetimedb.com/docs/tables/
-export const MapTile = table(
-  { name: 'map_tile', public: true },
+export const IconImage = table(
+  { name: 'icon_image', public: true },
   {
-    id: t.u64().primaryKey().autoInc(),
-    name:t.string(),
+    id: t.u64().primaryKey().autoInc(),// enity id
+    imageId:t.u64(),// image id
     created_at: t.timestamp(),
   }
 );

@@ -4,13 +4,18 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import {Pane} from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
 import van from "https://cdn.jsdelivr.net/gh/vanjs-org/van/public/van-1.6.0.min.js";
 import { ViewportGizmo } from "three-viewport-gizmo";
+import { 
+  FloatingWindow,
+  MessageBoard,
+} from "vanjs-ui"
+
 
 import { DbConnection, tables } from './module_bindings';
 
 const HOST = 'ws://localhost:3000';
 const DB_NAME = 'spacetime-app-map';
 
-const { div } = van.tags;
+const { div, p, button, input, img } = van.tags;
 // ────────────────────────────────────────────────
 // Define a function named degrees_to_radians that converts degrees to radians.
 function degrees_to_radians(degrees){
@@ -44,6 +49,7 @@ const MappingConfig = {
   markerRows: [],
   gridFolders: [],
   gridRows: [],
+  images: [], // table images
 }
 
 let paneMarker;
@@ -54,6 +60,7 @@ var gridPanel;
 var ph_plane;
 var marker;
 var markers = [];
+var grids = [];
 var isDrag = false;
 
 let selectedObject = null;
@@ -90,9 +97,27 @@ const conn = DbConnection.builder()
 
 function setupDB(){
   setupDBUser();
+  setupDBImage();
   setupDBMapping();
   setupDBMapTile();
 }
+
+function onInsert_Image(ctx, row){
+  MappingConfig.images.push(row);
+}
+
+function setupDBImage(){
+  conn
+    .subscriptionBuilder()
+    .onApplied((ctx) => {
+      ctx.db.image.onInsert(onInsert_Image)
+    })
+    .onError((ctx, error) => {
+      console.error(`Subscription failed: ${error}`);
+    })
+    .subscribe(tables.image);
+}
+
 function setupDBUser(){
   conn
     .subscriptionBuilder()
@@ -105,14 +130,12 @@ function setupDBUser(){
 //-----------------------------------------------
 // MAP MARKER
 //-----------------------------------------------
-
-function update_pane_marker(row){
+function update_pane_marker(){
   MappingConfig.markerFolders.forEach(f => f.dispose());
   MappingConfig.markerFolders = [];
   MappingConfig.markerRows.forEach((entity, index) => {
     console.log("MappingConfig.markerRows entity:", entity)
     const folder = paneMarker.addFolder({
-      // title: `${entity.name} (ID: ${entity.id})`,
       title: `${entity.id} Marker`,
       expanded: false,
     });
@@ -155,7 +178,6 @@ function onInsert_MapMarker(ctx, row){
 }
 //need to make sure there no override when update while move.
 function onUpdate_MapMarker(ctx, oldRow, newRow){
-
   for (let i = 0; i < scene.children.length; i++) {
     const object3d = scene.children[i];
     if(object3d.userData?.row?.id == newRow.id){
@@ -166,7 +188,6 @@ function onUpdate_MapMarker(ctx, oldRow, newRow){
       }
       break;
     }
-    // Perform actions
   }
 }
 
@@ -178,15 +199,17 @@ function onDelete_MapMarker(ctx, row){
     }
   }
 }
-
+//-----------------------------------------------
+// DB MAP
+//-----------------------------------------------
 function setupDBMapping(){
   conn
     .subscriptionBuilder()
     .onApplied((ctx) => {
       console.log("test");
       ctx.db.MapMarker.onInsert(onInsert_MapMarker);
-      ctx.db.MapMarker.onDelete(onDelete_MapMarker);
       ctx.db.MapMarker.onUpdate(onUpdate_MapMarker);
+      ctx.db.MapMarker.onDelete(onDelete_MapMarker);
     })
     .onError((ctx, error) => {
       console.error(`Subscription failed: ${error}`);
@@ -194,7 +217,6 @@ function setupDBMapping(){
     .subscribe(tables.MapMarker);
   // console.log(tables)
 }
-
 //-----------------------------------------------
 // MAP GRID
 //-----------------------------------------------
@@ -216,25 +238,22 @@ function update_pane_grids(row){
     MappingConfig.gridFolders.push(folder);
   });
 }
-
 function onInsert_MapTile(ctx, row){
   // console.log("map tile:", row);
   let isFound = false;
-
   for (let i = 0; i < scene.children.length; i++) {
     const object3d = scene.children[i];
     if(object3d.userData?.row?.id == row.id){
       isFound=true;
       break;
     }
-    // Perform actions
   }
   if(isFound==false){
     const _tileMap = create_grid();
     _tileMap.position.set(row.position.x, row.position.y, row.position.z);
     _tileMap.userData.row = row;
     scene.add(_tileMap);
-    // markers.push(_tileMap);
+    grids.push(_tileMap);
     const isDuplicate = MappingConfig.gridRows.some(r => r.id === row.id);
     // console.log("isDuplicate:", isDuplicate);
     if (!isDuplicate) {
@@ -252,9 +271,8 @@ function onDelete_MapTile(ctx, row){
 
 }
 
-var MapTileSub;
 function setupDBMapTile(){
-  MapTileSub = conn
+  conn
     .subscriptionBuilder()
     .onApplied((ctx) => {
       // console.log("map tile");
@@ -272,7 +290,6 @@ function setupDBMapTile(){
 //-----------------------------------------------
 // THRREE JS
 //-----------------------------------------------
-
 var axesHelper = null;
 var scene;
 var camera;
@@ -383,15 +400,26 @@ function create_grid(){
 }
 
 function cube_marker(){
-  const cubeMarker = new THREE.Mesh(
-    new THREE.BoxGeometry(2,2,2),
-    new THREE.MeshBasicMaterial({
-      color: 0xff3366,
-      wireframe:true
-    })
-  );
-  cubeMarker.visible = false;
-  return cubeMarker
+  // const cube = new THREE.Mesh(
+  //   new THREE.BoxGeometry(2,2,2),
+  //   new THREE.MeshBasicMaterial({
+  //     color: 0xff3366,
+  //     wireframe:true
+  //   })
+  // );
+  // cube.visible = false;
+  const geometry = new THREE.BoxGeometry(2,2,2);
+  const wireframe = new THREE.WireframeGeometry( geometry );
+  const lineMaterial = new THREE.LineBasicMaterial({
+    // color: 0xffffff
+    color: 0xff0000
+  });
+  const line = new THREE.LineSegments( wireframe, lineMaterial  );
+  line.material.depthWrite = false;
+  line.material.opacity = 0.25;
+  line.material.transparent = true;
+
+  return line
 }
 // ────────────────────────────────────────────────
 // Animation + rotation
@@ -445,8 +473,8 @@ function onPointerMove(event) {
     pointer3d.copy(intersectionPoint);
     update_position_placeholder_tile()
     if(marker){
-      // marker.position.copy(intersectionPoint);
-      // marker.visible = true;
+      marker.position.copy(intersectionPoint);
+      marker.visible = true;
     }
 
     // ─── Here is your desired Vector3 ────────────────────────
@@ -554,6 +582,7 @@ function delete_grid_tile(){
           console.log("conn map tile delete error!");
         }
         scene.remove(objModel);
+        grids = grids.filter(item => item !== object);
       }
     }
   }
@@ -720,13 +749,34 @@ window.addEventListener('keydown', (event)=>{
   }
 });
 
-
 function setup_editor_panel(){
   const pane = new Pane();
   const hotKeyFolder = pane.addFolder({title: 'Hot Keys'});
   hotKeyFolder.addBinding(MappingConfig, 'key1',{disabled: true });
   hotKeyFolder.addBinding(MappingConfig, 'key2',{disabled: true });
   hotKeyFolder.addBinding(MappingConfig, 'key3',{disabled: true });
+
+  const imageFolder = pane.addFolder({title: 'image'});
+  imageFolder.addButton({title:'Upload'}).on('click',()=>{
+    open_window_upload();
+  });
+  imageFolder.addButton({title:'Images'}).on('click',()=>{
+    open_window_icon();
+  });
+
+  const selectFolder = pane.addFolder({title: 'Select'});
+
+  selectFolder.addButton({title:'Grid'})
+  selectFolder.addButton({title:'Marker'})
+  selectFolder.addButton({title:'Text'})
+  selectFolder.addButton({title:'Voxel'})
+  // selectFolder.addButton({title:'Measure'})
+  selectFolder.addButton({title:'Monster'})
+  // selectFolder.addButton({title:'Boss'})
+  // selectFolder.addButton({title:'Chest'})
+  // selectFolder.addButton({title:'City'})
+  // selectFolder.addButton({title:'Town'})
+  // selectFolder.addButton({title:'Town'})
 
   const gridFolder = pane.addFolder({title: 'Position'});
   pointerPanel = gridFolder.addBinding(MappingConfig, 'pointer3d',{disabled: true });
@@ -776,6 +826,101 @@ function setup_editor_panel(){
   // const folderMarkers = paneEntity.addFolder({
   //   title: 'Markers',
   // });
+}
+
+
+function open_window_upload(){
+  van.add(document.body, window_upload())
+}
+
+function window_upload(){
+  const closed = van.state(false);
+  const width = van.state(300);
+  const height = van.state(220);
+  const fileEl = input({onchange:onChangeFile,type:"file"});
+  const iamgeEl = img({width:64,height:64});
+
+  function onChangeFile(){
+    const file = fileEl.files[0];
+    if(file){
+      const tempUrl = URL.createObjectURL(file);
+      iamgeEl.src = tempUrl;
+    }
+  }
+
+  async function upload_file(event){
+    console.log(event);
+    console.log(fileEl);
+    const file = fileEl.files[0];
+    if(file){
+      console.log(file);
+      const arrayBuffer = await file.arrayBuffer();
+      const fileBytes = new Uint8Array(arrayBuffer);
+      try {
+      conn.reducers.uploadImage({
+        name:file.name,
+        mimeType:file.type,
+        data:fileBytes
+      });  
+      console.log("pass!");
+      closed.val = true;
+      } catch (error) {
+        console.log("upload failed!");
+      }
+    }
+  }
+
+  return FloatingWindow({title: "Upload Image File:", closed, width:width.val, height, closeCross: null},
+    div({style: "display: flex; flex-direction: column; justify-content: center;"},
+      p("Preview"),
+      iamgeEl,
+      p("Select Single Image!"),
+      fileEl,
+      button({onclick:upload_file}, "Upload"),
+      button({onclick: () => closed.val = true}, "Close"),
+    ),
+  )
+}
+
+function open_window_icon(){
+  van.add(document.body, window_images())
+}
+
+function window_images(){
+  const closed = van.state(false);
+  const width = van.state(300);
+  const height = van.state(220);
+  const iamgeEl = img({width:64,height:64});
+  const imagesEl = div();
+
+  function selectImageId(id){
+    console.log("id: ", id);
+  }
+
+  function loadImages(){
+    for(const image of MappingConfig.images){
+
+      const blob = new Blob([image.data], { type: "image/png" }); 
+      const tempUrl = URL.createObjectURL(blob);
+      // const tempUrl = URL.createObjectURL(image.data);
+      const tmp = img({width:64, height:64, onclick:()=>selectImageId(image.id)});
+      tmp.src = tempUrl;
+      van.add(imagesEl, tmp);
+    }
+  }
+
+  loadImages();
+
+  return FloatingWindow({title: "Icons:", closed, width:width.val, height, closeCross: null},
+    div({style: "display: flex; flex-direction: column; justify-content: center;"},
+      p("Preview"),
+      iamgeEl,
+      p("Select Icon:"),
+      imagesEl,
+      button({onclick: () => closed.val = true}, "Close"),
+    ),
+  )
+
 }
 
 setup_renderer();

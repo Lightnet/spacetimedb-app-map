@@ -2,6 +2,10 @@
 // main entry point
 //-----------------------------------------------
 import spacetimedb, {init, onConnect, onDisconnect} from './module';
+
+
+import { upload_image } from './reducers/reducer_image';
+
 //-----------------------------------------------
 // 
 //-----------------------------------------------
@@ -25,9 +29,12 @@ import {
 // 
 //-----------------------------------------------
 export {
+    // default function
     init,
     onConnect,
     onDisconnect,
+    // image
+    upload_image,
     // mapping
     create_map_tile,
     update_map_tile,

@@ -7,10 +7,11 @@ import { schema, table, t, SenderError  } from 'spacetimedb/server';
 //-----------------------------------------------
 // 
 //-----------------------------------------------
-export const userAvatar = table(
-  { name: 'user_avatar', public: true },
+export const image = table(
+  { name: 'image', public: true },
   {
-    userId: t.u64().primaryKey(),
+    id: t.u64().autoInc().primaryKey(),
+    name: t.string(),
     mimeType: t.string(),
     data: t.array(t.u8()),  // Binary data stored inline
     uploadedAt: t.timestamp(),

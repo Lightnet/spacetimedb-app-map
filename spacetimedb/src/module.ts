@@ -8,13 +8,13 @@ import { user } from './tables/table_user';
 // import { message } from './tables/table_message';
 import { Planet, PlanetCoordinate, PlanetMarker  } from './tables/table_planet';
 import { MapMarker, MapTile } from './tables/table_mapping';
+import { image } from './tables/table_image';
 // ----------------------------------------------
 // SETUP TABLES
 // ----------------------------------------------
 const spacetimedb = schema({
   user,
-  // userAvatar,
-  // message,
+  image,
   //Mapping Tables
   MapTile,
   MapMarker,
