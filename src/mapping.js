@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
+// import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
 import {Pane} from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
 import van from "https://cdn.jsdelivr.net/gh/vanjs-org/van/public/van-1.6.0.min.js";
 import { ViewportGizmo } from "three-viewport-gizmo";
@@ -37,6 +37,9 @@ const MappingConfig = {
   grid_pos:{x:0,y:0,z:0},
   rot:{x:40.0,y:0,z:0}, //36.00
   offset_marker:{x:0,y:4,z:0},
+  factor: 50,
+  id:'',
+  selectId:'',
   markerFolders: [],
   markerRows: [],
   gridFolders: [],
@@ -46,29 +49,14 @@ const MappingConfig = {
 let paneMarker;
 let paneGrid;
 let paneProps;
-
-const state = {
-  entities: [
-    // { id: '1', name: 'Player', speed: 5 },
-    // { id: '2', name: 'Enemy', speed: 3 },
-  ]
-};
-
-const PARAMS = {
-  factor: 50,
-  id:'',
-  selectId:''
-};
 var pointerPanel;
 var gridPanel;
-// var triMarker;
 var ph_plane;
-// var tetrahedron;
 var marker;
 var markers = [];
 var isDrag = false;
 
-let selectedMarker = null;
+let selectedObject = null;
 let dragOffset = new THREE.Vector3();   // world-space offset from click point to marker center
 let dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0); // horizontal plane at y = 0
 
@@ -150,8 +138,9 @@ function onInsert_MapMarker(ctx, row){
     // Perform actions
   }
   if(isFound==false){
-    const _marker = create_tri_marker();
+    const _marker = create_model_marker();
     _marker.position.set(row.position.x, row.position.y, row.position.z);
+    _marker.position.add(MappingConfig.offset_marker);
     _marker.userData.row = row;
     // console.log(_marker.userData);
     scene.add(_marker);
@@ -167,7 +156,18 @@ function onInsert_MapMarker(ctx, row){
 //need to make sure there no override when update while move.
 function onUpdate_MapMarker(ctx, oldRow, newRow){
 
-
+  for (let i = 0; i < scene.children.length; i++) {
+    const object3d = scene.children[i];
+    if(object3d.userData?.row?.id == newRow.id){
+      // console.log("selectedObject:", selectedObject);
+      if((selectedObject?.userData?.row?.id != newRow.id) || (selectedObject == null)){
+        let pos = new THREE.Vector3(newRow.position.x,newRow.position.y,newRow.position.z).add(MappingConfig.offset_marker)
+        object3d.position.copy(pos)
+      }
+      break;
+    }
+    // Perform actions
+  }
 }
 
 function onDelete_MapMarker(ctx, row){
@@ -186,6 +186,7 @@ function setupDBMapping(){
       console.log("test");
       ctx.db.MapMarker.onInsert(onInsert_MapMarker);
       ctx.db.MapMarker.onDelete(onDelete_MapMarker);
+      ctx.db.MapMarker.onUpdate(onUpdate_MapMarker);
     })
     .onError((ctx, error) => {
       console.error(`Subscription failed: ${error}`);
@@ -330,9 +331,9 @@ function create_grid_helper(){
   return gridHelper
 }
 //-----------------------------------------------
-// Tetrahedron Geometry
+// Pointer Geometry
 //-----------------------------------------------
-function create_tri_marker(){
+function create_model_marker(){
   const t_geometry = new THREE.ConeGeometry( 4, 8, 4 );
   const t_material = new THREE.MeshBasicMaterial({
     color: 0xffff00,
@@ -340,12 +341,15 @@ function create_tri_marker(){
   });
   const _marker = new THREE.Mesh( t_geometry, t_material );
   _marker.rotation.x = Math.PI;
-  const groupMarker = new THREE.Group();
-  _marker.position.set(0,4,0);
-  _marker.userData = {tag:"Pointer"};
-  groupMarker.add(_marker);
+  _marker.userData.tag='Marker';
+  return _marker;
+  
+  // const groupMarker = new THREE.Group();
+  // _marker.position.set(0,4,0);
+  // _marker.userData = {tag:"Pointer"};
+  // groupMarker.add(_marker);
   // groupMarker.userData = {tag:'markPointer'}
-  return groupMarker;
+  // return groupMarker;
 }
 // ────────────────────────────────────────────────
 // PLANE
@@ -503,12 +507,11 @@ function place_grid_tile(){
   }
   if(isFound == false){
     if(place_grid){
-      let p = create_grid();
-      p.position.set(place_grid.x,place_grid.y,place_grid.z);
+      // let p = create_grid();
+      // p.position.set(place_grid.x,place_grid.y,place_grid.z);
       // 
       console.log("mesh");
       console.log(p);
-
       try {
         conn.reducers.createMapTile({
           x:place_grid.x,
@@ -519,19 +522,12 @@ function place_grid_tile(){
         console.log("conn place tile error");
       }
 
-      state.entities.push({
-        id:p.uuid,
-        name:p.uuid,
-        speed:0,
-        x: p.position.x,
-        y: p.position.y,
-        z: p.position.z,
-      })
-      updateEntityList();
     }
   }
 }
-
+// ────────────────────────────────────────────────
+// DELETE TILE
+// ────────────────────────────────────────────────
 function delete_grid_tile(){
   // make sure they do not overlap
   let isFound = false;
@@ -562,18 +558,21 @@ function delete_grid_tile(){
     }
   }
 }
-
+// ────────────────────────────────────────────────
+// DELETE MARKER
+// ────────────────────────────────────────────────
 function raycast_delete_marker(){
   //check to delete marker
-  console.log("selectedMarker:", selectedMarker);
+  console.log("selectedObject:", selectedObject);
 
   raycaster.setFromCamera(pointer, camera);
   const intersects = raycaster.intersectObjects(markers, true); // true = recursive (in case you have groups)
   if (intersects.length > 0) {
     const obj = intersects[0].object;
-    if(obj.userData.tag === "Pointer"){
+    if(obj.userData.tag === "Marker"){
       console.log("found marker");
-      let parent = obj.parent;
+      // let parent = obj.parent;
+      let parent = obj;
       console.log(obj.userData);
       try {
         if(parent.userData?.row?.id){
@@ -592,8 +591,10 @@ function raycast_delete_marker(){
 // PLACE MARK POINTER
 // ────────────────────────────────────────────────
 function placeMarkPointer(){
-  const triMarker = create_tri_marker();
-  triMarker.position.copy(pointer3d);
+  // const triMarker = create_model_marker();
+  // triMarker.position.copy(pointer3d);
+  // scene.add(triMarker);
+  // markers.push(triMarker);
   try {
     conn.reducers.createMapMarker({
       x:pointer3d.x,
@@ -603,8 +604,6 @@ function placeMarkPointer(){
   } catch (error) {
     console.log("conn place marker error");
   }
-  scene.add(triMarker);
-  markers.push(triMarker);
 }
 // ────────────────────────────────────────────────
 // SET UP SCENE
@@ -612,7 +611,7 @@ function placeMarkPointer(){
 function setup_scene(){
   setup_lights();
   scene.add( create_grid_helper() );
-  // triMarker = create_tri_marker();
+  // triMarker = create_model_marker();
   // tetrahedron = triMarker;
   // scene.add( triMarker );
   ph_plane = create_plane_floor();
@@ -625,6 +624,7 @@ function setup_scene(){
 // Events
 // ────────────────────────────────────────────────
 // Called on mousedown
+// need work on grid, marker and other entities.
 function onMouseDown(event) {
   if (event.button !== 0) return; // left click only
   pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -633,53 +633,71 @@ function onMouseDown(event) {
   const intersects = raycaster.intersectObjects(markers, true); // true = recursive (in case you have groups)
   if (intersects.length > 0) {
     const obj = intersects[0].object;
-    if(obj.userData.tag === "Pointer"){
-      // selectedMarker = obj.userData.tag === "Pointer" ? obj.parent : obj.parent; // your group
-      selectedMarker = obj.parent; // your group
+    console.log("mouse down marker: ",obj);
+    if(obj.userData.tag === "Marker"){
+      console.log("found...");
+      // selectedObject = obj.userData.tag === "Pointer" ? obj.parent : obj.parent; // your group
+      // selectedObject = obj.parent; // your group
+      selectedObject = obj; // your group
     }
     
-    if (selectedMarker) {
+    if (selectedObject) {
       controls.enabled = false;           // disable orbit while dragging
       isDrag = true;
 
       // Calculate exact offset so the marker doesn't jump
       const intersectPoint = intersects[0].point;
-      // dragOffset.copy(selectedMarker.position).sub(intersectPoint);
-      selectedMarker.position.copy(intersectPoint);
+      // dragOffset.copy(selectedObject.position).sub(intersectPoint);
+      selectedObject.position.copy(intersectPoint);
 
       // Optional: if you want to drag from the exact clicked height instead of forcing y=0
       // dragPlane.setFromNormalAndCoplanarPoint(new THREE.Vector3(0,1,0), intersectPoint);
     }
   }
 }
+
 // Called on mouse move (only the drag part)
 function onMouseMoveDrag(event) {
-  if (!selectedMarker || !isDrag) return;
-
+  if (!selectedObject || !isDrag) return;
   pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
   pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
   raycaster.setFromCamera(pointer, camera);
-
   const intersectPoint = new THREE.Vector3();
   if (raycaster.ray.intersectPlane(dragPlane, intersectPoint)) {
     // Apply offset so it feels natural
-    selectedMarker.position.copy(intersectPoint).add(dragOffset);
+    dragOffset.set(MappingConfig.offset_marker.x,MappingConfig.offset_marker.y,MappingConfig.offset_marker.z)
+    selectedObject.position.copy(intersectPoint).add(dragOffset);
+
+    try {
+      if(selectedObject.userData?.row){
+        conn.reducers.updateMapMarker({
+        id:selectedObject.userData.row.id,
+        x:intersectPoint.x,
+        y:intersectPoint.y,
+        z:intersectPoint.z,
+      })
+      }
+      
+    } catch (error) {
+      console.log("conn drag marker error!");
+    }
 
     // Optional: snap to your grid while dragging
-    // selectedMarker.position.x = Math.round(selectedMarker.position.x / grid_size) * grid_size;
-    // selectedMarker.position.z = Math.round(selectedMarker.position.z / grid_size) * grid_size;
+    // selectedObject.position.x = Math.round(selectedObject.position.x / grid_size) * grid_size;
+    // selectedObject.position.z = Math.round(selectedObject.position.z / grid_size) * grid_size;
     // (y stays 0 or whatever your marker base is)
   }
 }
+
 // Called on mouse up
 function onMouseUp() {
-  if (selectedMarker) {
+  if (selectedObject) {
     controls.enabled = true;
     isDrag = false;
-    selectedMarker = null;
+    selectedObject = null;
   }
 }
+
 // ────────────────────────────────────────────────
 // Attach the new listeners
 // ────────────────────────────────────────────────
@@ -701,10 +719,6 @@ window.addEventListener('keydown', (event)=>{
     placeMarkPointer();
   }
 });
-
-
-
-
 
 
 function setup_editor_panel(){
@@ -740,16 +754,9 @@ function setup_editor_panel(){
   van.add( document.body, entityEl);
 
   const paneEntity = new Pane({container:entityEl});
-  paneEntity.addBinding(PARAMS, 'id');
-  paneEntity.addBinding(PARAMS, 'selectId');
-  let entityFolders = []; // Track folders to dispose them later
-  // const btn_delete = paneEntity.addButton({
-  //   title: 'Delete',
-  // });
-  // const btn_update = paneEntity.addButton({
-  //   title: 'Update',
-  // });
-
+  paneEntity.addBinding(MappingConfig, 'id');
+  paneEntity.addBinding(MappingConfig, 'selectId');
+  
   paneProps = paneEntity.addFolder({
     title: 'Props',
   });
@@ -765,67 +772,6 @@ function setup_editor_panel(){
   });
   paneGrid.element.style["max-height"] = '280px';
   paneGrid.element.style["overflow-y"] = 'auto';
-
-
-  paneEntity.addButton({ title: '＋ Add New Entity' }).on('click', () => {
-    const newId = (state.entities.length + 1).toString();
-    state.entities.push({ id: newId, name: `Entity ${newId}`, speed: 0 });
-    updateEntityList();
-  });
-  const folderEntities = paneEntity.addFolder({
-    title: 'Entities',
-  });
-  // console.log(folderEntities);
-  // handle scroll height panel mod fixed.
-  folderEntities.element.style["max-height"] = '280px';
-  folderEntities.element.style["overflow-y"] = 'auto';
-
-  function updateEntityList() {
-    // Clear existing entity folders
-    entityFolders.forEach(f => f.dispose());
-    entityFolders = [];
-
-    // Re-add a folder for each entity in the current list
-    state.entities.forEach((entity, index) => {
-      const folder = folderEntities.addFolder({
-        // title: `${entity.name} (ID: ${entity.id})`,
-        title: `${entity.name}`,
-        expanded: false,
-      });
-
-      folder.addBinding(entity, 'name', { label: 'Name' });
-      // folder.addBinding(entity, 'speed', { min: 0, max: 10, label: 'Speed' });
-      folder.addBinding(entity, 'x', {  });
-      folder.addBinding(entity, 'y', {  });
-      folder.addBinding(entity, 'z', {  });
-
-      folder.addButton({ title: 'Select' }).on('click', () => {
-        console.log(entity);
-        axesHelper.position.set(entity.x,entity.y,entity.z);
-      })
-      // Add a delete button inside the folder
-      folder.addButton({ title: 'Remove Entity' }).on('click', () => {
-        state.entities.splice(index, 1); // Remove from data
-        updateEntityList();             // Refresh UI
-
-        // scene.traverse((obj)=>{
-        //   if(obj){
-        //     if(obj.uuid == entity.id){
-        //       scene.remove(obj);
-        //     }
-        //   }
-        // });
-        for (const child of scene.children()){
-          if(child){
-            if(child.uuid == entity.id){
-              scene.remove(child);
-            }
-          }
-        }
-      });
-      entityFolders.push(folder);
-    });
-  }
 
   // const folderMarkers = paneEntity.addFolder({
   //   title: 'Markers',

@@ -18,6 +18,7 @@ import {
     update_map_tile,
     delete_map_tile,
     create_map_marker,
+    update_map_marker,
     delete_map_marker,
 } from './reducers/reducers_mapping';
 //-----------------------------------------------
@@ -32,6 +33,7 @@ export {
     update_map_tile,
     delete_map_tile,
     create_map_marker,
+    update_map_marker,
     delete_map_marker,
     // planet
     create_planet_marker,

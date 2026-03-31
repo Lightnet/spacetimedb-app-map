@@ -3,12 +3,12 @@
 # License: MIT
 
 # Programs:
-- spacetimedb 2.0.5
+- spacetimedb 2.1.0
 
 # npm:
 - vanjs 1.6.0 (refs)
 - three 0.183.2
-- spacetimedb 2.0.4
+- spacetimedb 2.1.0
 - vite 8.0.0
 
 # Status:
@@ -17,20 +17,17 @@
 # Information:
   This is sample project build test. Note SpaceTimeDB has subject to change API and incorrect coding while in development.
 
-  Working on game world mapping without game play. It just simple mapping tool to able to store map and location markers to test.
-
-  So it would be just mapping editor tool.
-
-  Sample of the planet marker, tile map 2.5D and other tests. 
-
-## auth, user and token:
-  Since access to SpaceTimeDB by using the websocket. Which create anonymous user token by default since there no login password. It will auto generated token and Identity. It would need browser to store by local storage since it using the web socket to access database and server module.
-
-  You can think of browser client without user account check and default to guest access.
+  Building the prototype mapping tool to able to creae tile grid and marker to place in the world in 2.5 world. As well update and delete markers.
+  
+## Auth, User and Token:
+  Since access to SpaceTimeDB by using the websocket. Which create anonymous identity user string token by default since there no login password. It would would need local storage for browser able to login into the same identity by javascript to work. You can think of browser client without user account check and default to guest access to view.
 
 ## Database Names:
 - https://spacetimedb.com/docs/databases
-When you publish a module, you give the database a name. Database names must match the regex /^[a-z0-9]+(-[a-z0-9]+)*$/, i.e. only lowercase ASCII letters and numbers, separated by dashes.
+When you publish a module, you have to give the database a name to add server module. 
+
+
+Database names must match the regex /^[a-z0-9]+(-[a-z0-9]+)*$/, i.e. only lowercase ASCII letters and numbers, separated by dashes.
 
 ```
 my-game-server
@@ -52,7 +49,7 @@ const user = table(
   }
 );
 ```
-- public is expose for public access.
+- Table public is expose for public access else the client will not able to access table for client side.
 
 ```js
 // server
@@ -83,7 +80,7 @@ export const onConnect = spacetimedb.clientConnected(ctx => {
   }
 });
 ```
-- check if user exist it will update else create new user client
+- Check if user exist it will update else create new user client
 
 ```js
 //... client
@@ -110,13 +107,12 @@ const conn = DbConnection.builder()
   //...
   })
 ```
-- This will listen user table.
+- This will listen table user.
 
 
 # Set Up and Config
 - https://spacetimedb.com/docs/functions/views
 - https://spacetimedb.com/docs/functions/procedures
-- 
 
   SpaceTimeDB set up for server and database application.
 ## start app
@@ -125,20 +121,28 @@ spacetime start
 ```
 - start database and server application.
 - note it need to run on terminal.
-## Publish module:
+
+## SpaceTimeDB Dev:
+  This command will simalar to Bun js hot reload.
+```
+spacetime dev --server local
+```
+  Note they must in current project root folder to work.
+
+# Publish module:
 ```
 spacetime publish --server local --module-path spacetimedb spacetime-app-map
 ```
 - run spacetime to push module app
 - This support Typescript to push to module to run server for clients to access web socket.
-## App logs:
+# App logs:
 ```
 spacetime logs -s local -f spacetime-app-map 
 ```
 - Note this run another terminal to access spacetimedb client to log for database name.
 - log datbase spacetime-app-map debug 
 
-## Export client module:
+# Export client module:
 ```
 spacetime generate --lang typescript --out-dir src/module_bindings --module-path spacetimedb
 ```
@@ -146,37 +150,22 @@ spacetime generate --lang typescript --out-dir src/module_bindings --module-path
 - note this export typescript.
 - it can be use for normal.
 
-## web server:
+# web server:
   Using the vite js for easy to handle typescript and javacript browser support. It only to use to run static files.
 ```
 bun run dev
 ```
-## SQL:
+# SQL:
   To manual check sql table names.
 ```
 spacetime sql --server local spacetime-app-map "SELECT * FROM user"
 ```
-
 ```
-spacetime sql --server local spacetime-app-map "SELECT * FROM message"
+spacetime sql --server local spacetime-app-map "SELECT * FROM planet"
 ```
-
-```
-spacetime sql --server local spacetime-app-map "SELECT * FROM task"
-```
-
-```
-spacetime sql --server local spacetime-app-map "SELECT * FROM reminder"
-```
-
-```
-spacetime sql --server local spacetime-app-map "SELECT * FROM planet3d"
-```
-
 ```
 spacetime sql --server local spacetime-app-map "SELECT * FROM map_mark"
 ```
-
 ```
 spacetime sql --server local spacetime-app-map "SELECT * FROM map_tile"
 ```
@@ -184,35 +173,30 @@ spacetime sql --server local spacetime-app-map "SELECT * FROM map_tile"
 ## Notes:
 - Note the server module must match on export client module else it will error when api calls.
 
-
 # Examples:
-## schedules.html:
-- schedule
-  Testing the one time timer to trigger message.
-- event
-  Testing the event damage example from spacetimedb docs
-
+  Work in progress.
 
 # planet.html:
-- longitude
-- latitude
-- latLonToVector3
-- vector3ToLatLon
-- mouse to latitude,longitude on sphere
-- place marker base on latitude,longitude to 3d point
-- work in progress.
-
-# chat:
   Work in progress.
-- set name
-- send message
-- ui
+- longitude, latitude
+- [ ] latLonToVector3
+- [ ] vector3ToLatLon
+- [ ] mouse to latitude,longitude on sphere
+- [ ] place marker base on latitude, longitude to 3d point
+- [ ] orbit test
 
-# task:
-- add task
-- remove task
-- update task
-
-# map3D:
-- place tile
-- place marker
+# mapping.html:
+  Work in progress. Trying to keep it simple.
+- [ ] Grid Helper
+- [ ] ui
+    - [x] markers list
+    - [x] grid list
+- [ ] grid
+    - [x] add
+    - [x] delete
+    - [ ]update
+- [ ] marker
+    - [x] add
+    - [x] delete
+    - [x]update
+        - drag marker

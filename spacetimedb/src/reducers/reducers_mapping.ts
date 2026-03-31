@@ -60,6 +60,26 @@ export const create_map_marker = spacetimedb.reducer(
     });
   }
 );
+
+// ----------------------------------------------
+// UPDATE MAP MARK
+// ----------------------------------------------
+export const update_map_marker = spacetimedb.reducer(
+  {id: t.u64(), x: t.f64(),y: t.f64(),z: t.f64() },
+  (ctx, { id, x, y, z }) => {
+    console.log("Update Map Marker x, y, z", x, ": ", y, ": ",z);
+
+    const marker = ctx.db.MapMarker.id.find(id);
+
+    if(marker){
+      marker.position.x = x;
+      marker.position.y = y;
+      marker.position.z = z;
+      ctx.db.MapMarker.id.update(marker);
+    }
+    
+  }
+);
 // ----------------------------------------------
 // DELETE MAP MARK
 // ----------------------------------------------
