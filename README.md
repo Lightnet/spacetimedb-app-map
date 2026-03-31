@@ -17,104 +17,27 @@
 # Information:
   This is sample project build test. Note SpaceTimeDB has subject to change API and incorrect coding while in development.
 
-  Building the prototype mapping tool to able to creae tile grid and marker to place in the world in 2.5 world. As well update and delete markers.
-  
-## Auth, User and Token:
-  Since access to SpaceTimeDB by using the websocket. Which create anonymous identity user string token by default since there no login password. It would would need local storage for browser able to login into the same identity by javascript to work. You can think of browser client without user account check and default to guest access to view.
+  Building the prototype mapping tool to able to creae tile grid and marker to create, update and delete markers in the world in 2.5 world.
 
-## Database Names:
-- https://spacetimedb.com/docs/databases
-When you publish a module, you have to give the database a name to add server module. 
+# Why SpacetimeDB?:
+  Using the SpaceTimeDB might be over killed just for mapping tool. But what if the mapping is too big for browser to load many entities. Which can lag. It can be filter down by layers or range.
 
-
-Database names must match the regex /^[a-z0-9]+(-[a-z0-9]+)*$/, i.e. only lowercase ASCII letters and numbers, separated by dashes.
-
-```
-my-game-server
-chat-app-production
-test123
-```
-
-# SpaceTimeDB script:
-  Note that server module need to push to SpaceTimeDB app and export client module.
-
-```js
-// server
-const user = table(
-  { name: 'user', public: true },
-  {
-    identity: t.identity().primaryKey(),
-    name: t.string().optional(),
-    online: t.bool(),
-  }
-);
-```
-- Table public is expose for public access else the client will not able to access table for client side.
-
-```js
-// server
-export const set_name = spacetimedb.reducer({ name: t.string() }, (ctx, { name }) => {
-  // console.info("Name: ",name);
-  validateName(name);
-  const user = ctx.db.user.identity.find(ctx.sender);// client id
-  if (!user) {
-    throw new SenderError('Cannot set name for unknown user');
-  }
-  ctx.db.user.identity.update({ ...user, name });
-});
-```
-
-```js
-// server
-export const onConnect = spacetimedb.clientConnected(ctx => {
-  const user = ctx.db.user.identity.find(ctx.sender);
-  console.log("SENDER: ",ctx.sender);
-  if (user) {
-    ctx.db.user.identity.update({ ...user, online: true });
-  } else {
-    ctx.db.user.insert({
-      identity: ctx.sender,
-      name: undefined,
-      online: true,
-    });
-  }
-});
-```
-- Check if user exist it will update else create new user client
-
-```js
-//... client
-function apply_user(ctx){
-  // console.log("apply");
-  console.log(`Ready with ${ctx.db.user.count()} users`);
-  // console.log(ctx);
-}
-//...
-
-const conn = DbConnection.builder()
-  .withUri(HOST)
-  .withDatabaseName(DB_NAME)
-  .withToken(localStorage.getItem('auth_token') || undefined)
-  .onConnect((conn, identity, token) => {
-  //...
-    conn
-      .subscriptionBuilder()
-        .onApplied((ctx) => apply_user(ctx))
-        .onError((ctx, error) => {
-          console.error(`Subscription failed: ${error}`);
-        })
-        .subscribe(tables.user);
-  //...
-  })
-```
-- This will listen table user.
-
+## Ideas:
+- timer and postion when monster spawn.
+- event area
+- measure distance which need to config base on image.
+- patrol, route
+- underground
+- level
+- timer location
+- icons location
+- monster location
+- boss location
 
 # Set Up and Config
-- https://spacetimedb.com/docs/functions/views
-- https://spacetimedb.com/docs/functions/procedures
+  Required SpaceTimeDB install to local machine or container. As well Bun install. WHich need to compile and build server and client.
 
-  SpaceTimeDB set up for server and database application.
+  SpaceTimeDB set up for server module, database application and command line. Which is all one package.
 ## start app
 ```
 spacetime start
