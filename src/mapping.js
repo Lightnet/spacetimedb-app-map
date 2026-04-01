@@ -33,7 +33,6 @@ var longitude = 0; // y
 var latitude  = 0; // x
 
 const MappingConfig = {
-  myBoolean: true,
   key1:"B = Build",
   key2:"X = Delete",
   key3:"M = Pointer",
@@ -44,12 +43,25 @@ const MappingConfig = {
   factor: 50,
   id:'',
   selectId:'',
-  markerFolders: [],
-  markerRows: [],
-  gridFolders: [],
-  gridRows: [],
-  images: [],         // table images
-  icons: [],          // image data
+  selectType:'',//['TILE','MARKER','VOXEL','TEXT','LANE']
+  selectObject:null,//['TILE','MARKER','VOXEL','TEXT','LANE']
+  dragType:'',
+  isDrag:false,           // object3d drag
+
+  markerFolders: [],      // panel folder
+  markerRows: [],         //table
+  gridFolders: [],        // panel folders
+  gridRows: [],           // table
+  images: [],             // table images
+  icons: [],              // image data
+  modeType:"OBJECT",      //["OBJECT","EDIT"]
+  buildTypes: [
+    // {text:'Grid', value:'GRID'},
+    {text:'Tile', value:'TILE'},
+    {text:'Marker', value:'MARKER'},
+    {text:'Voxel', value:'VOXEL'},
+    {text:'Text', value:'TEXT'},
+  ]
 }
 
 let paneMarker;
@@ -61,7 +73,6 @@ var ph_plane;
 var marker;
 var markers = [];
 var grids = [];
-var isDrag = false;
 
 let selectedObject = null;
 let dragOffset = new THREE.Vector3();   // world-space offset from click point to marker center
@@ -494,6 +505,8 @@ function update_position_placeholder_tile(){
       z: grid_z
     };
 
+    // console.log(MappingConfig.grid_pos);
+
     // console.log("g x:", grid_x, " y:", grid_y, " z:",grid_z);
     MappingConfig.pointer3d.x = pointer3d.x;
     MappingConfig.pointer3d.y = pointer3d.y;
@@ -555,7 +568,6 @@ function animate() {
     controls.update();
   }
   renderer.render(scene, camera);
-
   gizmo.render();
 }
 // ────────────────────────────────────────────────
@@ -726,11 +738,17 @@ function onMouseDown(event) {
       // selectedObject = obj.userData.tag === "Pointer" ? obj.parent : obj.parent; // your group
       // selectedObject = obj.parent; // your group
       selectedObject = obj; // your group
+      console.log(obj.userData);
+      // MappingConfig.selectId = String(obj.userData.row.id);
+      MappingConfig.selectId = obj.userData.row.id;
+      MappingConfig.selectType = 'MARKER';
+      MappingConfig.selectObject = obj;
+      MappingConfig.dragType='MARKER'
     }
     
     if (selectedObject) {
       controls.enabled = false;           // disable orbit while dragging
-      isDrag = true;
+      MappingConfig.isDrag = true;
 
       // Calculate exact offset so the marker doesn't jump
       const intersectPoint = intersects[0].point;
@@ -745,7 +763,7 @@ function onMouseDown(event) {
 
 // Called on mouse move (only the drag part)
 function onMouseMoveDrag(event) {
-  if (!selectedObject || !isDrag) return;
+  if (!selectedObject || !MappingConfig.isDrag) return;
   pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
   pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
   raycaster.setFromCamera(pointer, camera);
@@ -758,13 +776,12 @@ function onMouseMoveDrag(event) {
     try {
       if(selectedObject.userData?.row){
         conn.reducers.updateMapMarker({
-        id:selectedObject.userData.row.id,
-        x:intersectPoint.x,
-        y:intersectPoint.y,
-        z:intersectPoint.z,
-      })
+          id:selectedObject.userData.row.id,
+          x:intersectPoint.x,
+          y:intersectPoint.y,
+          z:intersectPoint.z,
+        })
       }
-      
     } catch (error) {
       console.log("conn drag marker error!");
     }
@@ -780,8 +797,9 @@ function onMouseMoveDrag(event) {
 function onMouseUp() {
   if (selectedObject) {
     controls.enabled = true;
-    isDrag = false;
+    MappingConfig.isDrag = false;
     selectedObject = null;
+    MappingConfig.dragType=''
   }
 }
 
@@ -816,7 +834,11 @@ function setup_editor_panel(){
   hotKeyFolder.addBinding(MappingConfig, 'key2',{disabled: true });
   hotKeyFolder.addBinding(MappingConfig, 'key3',{disabled: true });
 
-  const imageFolder = pane.addFolder({title: 'image'});
+  const gridFolder = pane.addFolder({title: 'Mouse Position'});
+  pointerPanel = gridFolder.addBinding(MappingConfig, 'pointer3d',{disabled: true });
+  gridPanel = gridFolder.addBinding(MappingConfig, 'grid_pos',{disabled: true });
+
+  const imageFolder = pane.addFolder({title: 'Image'});
   imageFolder.addButton({title:'Upload'}).on('click',()=>{
     open_window_upload();
   });
@@ -824,52 +846,82 @@ function setup_editor_panel(){
     open_window_icon();
   });
 
-  const selectFolder = pane.addFolder({title: 'Select'});
+  pane.addBlade({
+  view: 'list',
+  label: 'Build Type',
+  options: MappingConfig.buildTypes,
+  value: 'MARKER',
+});
 
-  selectFolder.addButton({title:'Grid'})
+  const selectFolder = pane.addFolder({title: 'Build Select'});
+
+  // selectFolder.addButton({title:'Grid'})
+  selectFolder.addButton({title:'Tile'})
   selectFolder.addButton({title:'Marker'})
   selectFolder.addButton({title:'Text'})
   selectFolder.addButton({title:'Voxel'})
+
+  // selectFolder.addButton({title:'Quest'})
+  // selectFolder.addButton({title:'Chest'})
+  // selectFolder.addButton({title:'Fast Travel'})
+
   // selectFolder.addButton({title:'Measure'})
-  selectFolder.addButton({title:'Monster'})
+  // selectFolder.addButton({title:'Creature'})
   // selectFolder.addButton({title:'Boss'})
   // selectFolder.addButton({title:'Chest'})
   // selectFolder.addButton({title:'City'})
   // selectFolder.addButton({title:'Town'})
   // selectFolder.addButton({title:'Town'})
 
-  const gridFolder = pane.addFolder({title: 'Position'});
-  pointerPanel = gridFolder.addBinding(MappingConfig, 'pointer3d',{disabled: true });
-  gridPanel = gridFolder.addBinding(MappingConfig, 'grid_pos',{disabled: true });
+
+  // const rotFolder = pane.addFolder({title: 'Rotate'});
+  // gridPanel = rotFolder.addBinding(MappingConfig.rot, 'x',{}).on('change', (ev) => {
+  //   // console.log(ev);
+  //   // tetrahedron.rotateX(degrees_to_radians(ev.value));
+  //   tetrahedron.rotation.x = degrees_to_radians(ev.value)
+  // });
+  // gridPanel = rotFolder.addBinding(MappingConfig.rot, 'y',{}).on('change', (ev) => {
+  //   // console.log(ev);
+  //   // tetrahedron.rotateY(degrees_to_radians(ev.value));
+  //   tetrahedron.rotation.y = degrees_to_radians(ev.value)
+  // });
+  // gridPanel = rotFolder.addBinding(MappingConfig.rot, 'z',{}).on('change', (ev) => {
+  //   // console.log(ev);
+  //   // tetrahedron.rotateZ(degrees_to_radians(ev.value));
+  //   tetrahedron.rotation.z = degrees_to_radians(ev.value)
+  // });
 
 
-  const rotFolder = pane.addFolder({title: 'Rotate'});
-  gridPanel = rotFolder.addBinding(MappingConfig.rot, 'x',{}).on('change', (ev) => {
-    // console.log(ev);
-    // tetrahedron.rotateX(degrees_to_radians(ev.value));
-    tetrahedron.rotation.x = degrees_to_radians(ev.value)
-  });
-  gridPanel = rotFolder.addBinding(MappingConfig.rot, 'y',{}).on('change', (ev) => {
-    // console.log(ev);
-    // tetrahedron.rotateY(degrees_to_radians(ev.value));
-    tetrahedron.rotation.y = degrees_to_radians(ev.value)
-  });
-  gridPanel = rotFolder.addBinding(MappingConfig.rot, 'z',{}).on('change', (ev) => {
-    // console.log(ev);
-    // tetrahedron.rotateZ(degrees_to_radians(ev.value));
-    tetrahedron.rotation.z = degrees_to_radians(ev.value)
-  });
+  const testFolder = pane.addFolder({title: 'Test'});
+  testFolder.addButton({title:'test'}).on('click',()=>{
+    console.log('test');
+    conn.reducers.callTest({});
+  })
 
   const entityEl = div({style:`position:fixed;top:0;left:0;`});
   van.add( document.body, entityEl);
 
   const paneEntity = new Pane({container:entityEl});
-  paneEntity.addBinding(MappingConfig, 'id');
-  paneEntity.addBinding(MappingConfig, 'selectId');
-  
-  paneProps = paneEntity.addFolder({
-    title: 'Props',
+  // paneEntity.addBinding(MappingConfig, 'id',{
+  //   readonly: true,
+  // });
+  paneEntity.addBinding(MappingConfig, 'selectId',{
+    readonly: true,
   });
+  paneEntity.addBinding(MappingConfig, 'selectType',{
+    readonly: true,
+  });
+
+  paneEntity.addBinding(MappingConfig, 'dragType',{
+    readonly: true,
+  });
+
+  paneEntity.addBinding(MappingConfig, 'isDrag',{
+    readonly: true,
+  });
+  // paneEntity.addBinding(MappingConfig, 'selectObject');
+  
+  paneProps = paneEntity.addFolder({title: 'Props'});
 
   paneMarker = paneEntity.addFolder({
     title: 'Markers',
@@ -979,7 +1031,6 @@ function window_images(){
     ),
   )
 }
-
 
 function window_assign_icon(_entityId){
   const closed = van.state(false);

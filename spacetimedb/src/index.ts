@@ -32,6 +32,10 @@ import {
     delete_icon,
 } from './reducers/reducer_entity'
 
+import {
+    call_test
+} from './reducers/reducer_test'
+
 //-----------------------------------------------
 // 
 //-----------------------------------------------
@@ -56,6 +60,8 @@ export {
     create_planet_marker,
     update_planet_maker,
     delete_planet_marker,
+    // test
+    call_test
 }
 //-----------------------------------------------
 // 
