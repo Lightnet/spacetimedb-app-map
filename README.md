@@ -128,9 +128,9 @@ spacetime sql --server local spacetime-app-map "SELECT * FROM icon"
     - [ ] delete
     - [ ] size (need to scale when camera zoom in and out?)
 - [ ] ui
-    - [x] markers list
-    - [x] grid list
-- [ ] grid
+    - [x] Markers list
+    - [x] Tile list
+- [ ] tile
     - [x] add
     - [x] delete
     - [ ]update

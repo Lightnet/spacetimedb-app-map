@@ -50,8 +50,8 @@ const MappingConfig = {
 
   markerFolders: [],      // panel folder
   markerRows: [],         //table
-  gridFolders: [],        // panel folders
-  gridRows: [],           // table
+  tileFolders: [],        // panel folders
+  tileRows: [],           // table
   images: [],             // table images
   icons: [],              // image data
   modeType:"OBJECT",      //["OBJECT","EDIT"]
@@ -110,7 +110,7 @@ function setupDB(){
   setupDBUser();
   setupDBIcon();
   setupDBImage();
-  setupDBMapping();
+  setupDBMarker();
   setupDBMapTile();
 }
 //-----------------------------------------------
@@ -271,7 +271,7 @@ function onDelete_MapMarker(ctx, row){
 //-----------------------------------------------
 // DB MAP
 //-----------------------------------------------
-function setupDBMapping(){
+function setupDBMarker(){
   conn
     .subscriptionBuilder()
     .onApplied((ctx) => {
@@ -287,13 +287,13 @@ function setupDBMapping(){
   // console.log(tables)
 }
 //-----------------------------------------------
-// MAP GRID
+// MAP TILE
 //-----------------------------------------------
-function update_pane_grids(row){
-  MappingConfig.gridFolders.forEach(f => f.dispose());
-  MappingConfig.gridFolders = [];
-  MappingConfig.gridRows.forEach((entity, index) => {
-    // console.log("MappingConfig.gridRows entity:", entity)
+function update_pane_tile(row){
+  MappingConfig.tileFolders.forEach(f => f.dispose());
+  MappingConfig.tileFolders = [];
+  MappingConfig.tileRows.forEach((entity, index) => {
+    // console.log("MappingConfig.tileRows entity:", entity)
     const folder = paneGrid.addFolder({
       // title: `${entity.name} (ID: ${entity.id})`,
       title: `${entity.id} Tile`,
@@ -304,7 +304,7 @@ function update_pane_grids(row){
     folder.addButton({title:'Select'}).on('click',()=>{
       axesHelper.position.set(entity.position.x,entity.position.y,entity.position.z);
     });
-    MappingConfig.gridFolders.push(folder);
+    MappingConfig.tileFolders.push(folder);
   });
 }
 function onInsert_MapTile(ctx, row){
@@ -318,17 +318,17 @@ function onInsert_MapTile(ctx, row){
     }
   }
   if(isFound==false){
-    const _tileMap = create_grid();
+    const _tileMap = create_tile();
     _tileMap.position.set(row.position.x, row.position.y, row.position.z);
     _tileMap.userData.row = row;
     scene.add(_tileMap);
     grids.push(_tileMap);
-    const isDuplicate = MappingConfig.gridRows.some(r => r.id === row.id);
+    const isDuplicate = MappingConfig.tileRows.some(r => r.id === row.id);
     // console.log("isDuplicate:", isDuplicate);
     if (!isDuplicate) {
-      MappingConfig.gridRows.push(row);
+      MappingConfig.tileRows.push(row);
     }
-    update_pane_grids();
+    update_pane_tile();
   }
 }
 
@@ -337,7 +337,15 @@ function onUpdate_MapTile(ctx, oldRow, newRow){
 }
 
 function onDelete_MapTile(ctx, row){
-
+  for(const entity of scene.children){
+    if(entity.userData?.row !=null){
+      if(entity.userData.row.id == row.id){
+        scene.remove(entity);
+        // MappingConfig.tiles
+        MappingConfig.tileRows = MappingConfig.tileRows.filter(r=>r.id != row.id);
+      }
+    }
+  }
 }
 
 function setupDBMapTile(){
@@ -454,7 +462,7 @@ function create_plane_floor(){
 //-----------------------------------------------
 // CREATE GRID
 //-----------------------------------------------
-function create_grid(){
+function create_tile(){
   const p_geometry = new THREE.PlaneGeometry( 32, 32 );
   const p_material = new THREE.MeshBasicMaterial( {
     color: 0xffff00, 
@@ -605,7 +613,7 @@ function place_grid_tile(){
   }
   if(isFound == false){
     if(place_grid){
-      // let p = create_grid();
+      // let p = create_tile();
       // p.position.set(place_grid.x,place_grid.y,place_grid.z);
       // 
       console.log("mesh");
@@ -652,7 +660,7 @@ function delete_grid_tile(){
           console.log("conn map tile delete error!");
         }
         scene.remove(objModel);
-        grids = grids.filter(item => item !== object);
+        grids = grids.filter(item => item !== objModel);
       }
     }
   }
