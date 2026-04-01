@@ -9,7 +9,6 @@ import {
   MessageBoard,
 } from "vanjs-ui"
 
-
 import { DbConnection, tables } from './module_bindings';
 
 const HOST = 'ws://localhost:3000';
@@ -49,7 +48,8 @@ const MappingConfig = {
   markerRows: [],
   gridFolders: [],
   gridRows: [],
-  images: [], // table images
+  images: [],         // table images
+  icons: [],          // image data
 }
 
 let paneMarker;
@@ -97,11 +97,14 @@ const conn = DbConnection.builder()
 
 function setupDB(){
   setupDBUser();
+  setupDBIcon();
   setupDBImage();
   setupDBMapping();
   setupDBMapTile();
 }
-
+//-----------------------------------------------
+//
+//-----------------------------------------------
 function onInsert_Image(ctx, row){
   MappingConfig.images.push(row);
 }
@@ -116,6 +119,26 @@ function setupDBImage(){
       console.error(`Subscription failed: ${error}`);
     })
     .subscribe(tables.image);
+}
+
+//-----------------------------------------------
+// ICON
+//-----------------------------------------------
+function onInsert_Icon(ctx, row){
+  console.log("load icon:",row);
+  MappingConfig.icons.push(row)
+}
+// load icon data
+function setupDBIcon(){
+  conn
+    .subscriptionBuilder()
+    .onApplied((ctx) => {
+      ctx.db.icon.onInsert(onInsert_Icon)
+    })
+    .onError((ctx, error) => {
+      console.error(`Subscription failed: ${error}`);
+    })
+    .subscribe(tables.icon);
 }
 
 function setupDBUser(){
@@ -144,6 +167,11 @@ function update_pane_marker(){
     folder.addButton({title:'Select'}).on('click',()=>{
       axesHelper.position.set(entity.position.x,entity.position.y,entity.position.z);
     });
+
+    folder.addButton({title:'Icon'}).on('click',()=>{
+      van.add(document.body, window_assign_icon(entity.id));
+    });
+
     MappingConfig.markerFolders.push(folder);
   });
 }
@@ -166,6 +194,36 @@ function onInsert_MapMarker(ctx, row){
     _marker.position.add(MappingConfig.offset_marker);
     _marker.userData.row = row;
     // console.log(_marker.userData);
+    // ICON DATA ???
+    const hasIcon = MappingConfig.icons.filter(r=>r.entityId == row.id);
+    console.log("hasIcon:",hasIcon);
+    if(hasIcon.length > 0){
+      const hasImage = MappingConfig.images.filter(r=>r.id == hasIcon[0].imageId)
+      console.log("hasImage: ",hasImage);
+      if(hasImage.length > 0){
+        const blob = new Blob([hasImage[0].data], { type: 'image/png' });
+        const url = URL.createObjectURL(blob);
+        const loader = new THREE.TextureLoader();
+        const texture = loader.load(url, () => {
+            // Revoke the URL once loaded to free memory
+            URL.revokeObjectURL(url);
+        });
+
+        console.log(texture);
+
+        const material = new THREE.SpriteMaterial({ map: texture });
+        const sprite = new THREE.Sprite(material);
+
+        // const map = new THREE.TextureLoader().load( 'sprite.png' );
+        // const material = new THREE.SpriteMaterial( { map: map } );
+        // const sprite = new THREE.Sprite( material );
+        // sprite.position.set(0,-8,0);
+        sprite.position.y = -8.0
+        _marker.add(sprite)
+        
+      }
+    }
+
     scene.add(_marker);
     markers.push(_marker);
     const isDuplicate = MappingConfig.markerRows.some(r => r.id === row.id);
@@ -727,15 +785,7 @@ function onMouseUp() {
   }
 }
 
-// ────────────────────────────────────────────────
-// Attach the new listeners
-// ────────────────────────────────────────────────
-window.addEventListener('mousedown', onMouseDown);
-window.addEventListener('mousemove', onMouseMoveDrag);   // keep your existing onPointerMove for the pointer3d / tile preview
-window.addEventListener('mouseup', onMouseUp);
-window.addEventListener('resize', onWindowResize);
-window.addEventListener('pointermove', onPointerMove);
-window.addEventListener('keydown', (event)=>{
+function onKeyDown(event){
   // console.log(event.code);
   if(event.code == 'KeyB'){
     place_grid_tile();
@@ -747,7 +797,17 @@ window.addEventListener('keydown', (event)=>{
   if(event.code == 'KeyM'){
     placeMarkPointer();
   }
-});
+}
+
+// ────────────────────────────────────────────────
+// Attach the new listeners
+// ────────────────────────────────────────────────
+window.addEventListener('mousedown', onMouseDown);
+window.addEventListener('mousemove', onMouseMoveDrag);   // keep your existing onPointerMove for the pointer3d / tile preview
+window.addEventListener('mouseup', onMouseUp);
+window.addEventListener('resize', onWindowResize);
+window.addEventListener('pointermove', onPointerMove);
+window.addEventListener('keydown', onKeyDown);
 
 function setup_editor_panel(){
   const pane = new Pane();
@@ -828,7 +888,6 @@ function setup_editor_panel(){
   // });
 }
 
-
 function open_window_upload(){
   van.add(document.body, window_upload())
 }
@@ -899,7 +958,6 @@ function window_images(){
 
   function loadImages(){
     for(const image of MappingConfig.images){
-
       const blob = new Blob([image.data], { type: "image/png" }); 
       const tempUrl = URL.createObjectURL(blob);
       // const tempUrl = URL.createObjectURL(image.data);
@@ -920,7 +978,69 @@ function window_images(){
       button({onclick: () => closed.val = true}, "Close"),
     ),
   )
+}
 
+
+function window_assign_icon(_entityId){
+  const closed = van.state(false);
+  const width = van.state(300);
+  const height = van.state(220);
+  const iamgeEl = img({width:64,height:64});
+  const imagesEl = div();
+  const selectId = van.state('');
+
+  function selectImageId(id){
+    console.log("id: ", id);
+
+    const _image = MappingConfig.images.filter(r=>r.id == id)[0];
+    console.log(_image);
+    if(_image){
+      const blob = new Blob([_image.data], { type: "image/png" });
+      const tempUrl = URL.createObjectURL(blob);
+      iamgeEl.src = tempUrl;
+      selectId.val = id;
+    }
+    // iamgeEl
+  }
+
+  function onApply(){
+    console.log("image selectId: ",selectId.val)
+    console.log("entityId: ", _entityId)
+
+    try {
+      conn.reducers.createIcon({
+        imageId: selectId.val,
+        entityId: _entityId,
+      })
+    } catch (error) {
+      console.log("assign icon error!")
+    }
+
+  }
+
+  function loadImages(){
+    for(const image of MappingConfig.images){
+      const blob = new Blob([image.data], { type: "image/png" }); 
+      const tempUrl = URL.createObjectURL(blob);
+      // const tempUrl = URL.createObjectURL(image.data);
+      const tmp = img({width:64, height:64, onclick:()=>selectImageId(image.id)});
+      tmp.src = tempUrl;
+      van.add(imagesEl, tmp);
+    }
+  }
+
+  loadImages();
+
+  return FloatingWindow({title: "Add Icon", closed, width:width.val, height, closeCross: null},
+    div({style: "display: flex; flex-direction: column; justify-content: center;"},
+      p("Preview"),
+      iamgeEl,
+      p("Select Icon:"),
+      imagesEl,
+      button({onclick: onApply}, "Apply"),
+      button({onclick: () => closed.val = true}, "Close"),
+    ),
+  )
 }
 
 setup_renderer();

@@ -1,23 +1,18 @@
-// 
-
-import { Timestamp } from 'spacetimedb';
+//-----------------------------------------------
+// TABLE TEST
+//-----------------------------------------------
+// import { Timestamp } from 'spacetimedb';
 import { schema, table, t, SenderError  } from 'spacetimedb/server';
-import spacetimedb from '../module';
+// import spacetimedb from '../module';
 // ----------------------------------------------
-// Planet
+// Test
 // ----------------------------------------------
-
-// Planet3D CREATE
-export const create_mark_planet3d = spacetimedb.reducer(
-  { x: t.f64(),y: t.f64(),z: t.f64() },
-  (ctx, { x, y, z }) => {
-    console.log("CREATE Planet x, y, z");
-    console.log(x, y, z);
-    return ctx.db.Planet.insert({
-      id: 0n,
-      position:{x,y,z},
-      created_at: Timestamp.now()
-    });
+export const test = table(
+  { name: 'test', public: true },
+  {
+    id: t.u64().primaryKey().autoInc(),   // id
+    text:t.string().index('btree'),       // enable search
+    created_at: t.timestamp(),
   }
 );
 //-----------------------------------------------

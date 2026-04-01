@@ -9,12 +9,14 @@ import { user } from './tables/table_user';
 import { Planet, PlanetCoordinate, PlanetMarker  } from './tables/table_planet';
 import { MapMarker, MapTile } from './tables/table_mapping';
 import { image } from './tables/table_image';
+import { icon } from './tables/table_entity';
 // ----------------------------------------------
 // SETUP TABLES
 // ----------------------------------------------
 const spacetimedb = schema({
   user,
   image,
+  icon,
   //Mapping Tables
   MapTile,
   MapMarker,

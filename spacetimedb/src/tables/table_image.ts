@@ -1,5 +1,5 @@
 //-----------------------------------------------
-// 
+// TABLE IMAGE
 //-----------------------------------------------
 // import { Timestamp } from 'spacetimedb';
 import { schema, table, t, SenderError  } from 'spacetimedb/server';

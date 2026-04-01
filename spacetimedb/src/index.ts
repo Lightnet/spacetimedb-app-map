@@ -13,7 +13,7 @@ import {
     create_planet_marker,
     update_planet_maker,
     delete_planet_marker,
-} from './reducers/reducers_planet';
+} from './reducers/reducer_planet';
 //-----------------------------------------------
 // 
 //-----------------------------------------------
@@ -24,7 +24,14 @@ import {
     create_map_marker,
     update_map_marker,
     delete_map_marker,
-} from './reducers/reducers_mapping';
+} from './reducers/reducer_mapping';
+
+import { 
+    create_icon,
+    update_icon,
+    delete_icon,
+} from './reducers/reducer_entity'
+
 //-----------------------------------------------
 // 
 //-----------------------------------------------
@@ -42,6 +49,9 @@ export {
     create_map_marker,
     update_map_marker,
     delete_map_marker,
+    create_icon,
+    update_icon,
+    delete_icon,
     // planet
     create_planet_marker,
     update_planet_maker,

@@ -1,16 +1,19 @@
 //-----------------------------------------------
-// 
+// TABLE ENTITY
 //-----------------------------------------------
 import { schema, table, t, SenderError  } from 'spacetimedb/server';
 // https://spacetimedb.com/docs/tables/
-export const IconImage = table(
-  { name: 'icon_image', public: true },
+export const icon = table(
+  { name: 'icon', public: true },
   {
-    id: t.u64().primaryKey().autoInc(),// enity id
-    imageId:t.u64(),// image id
+    id: t.u64().primaryKey().autoInc(),   // id
+    entityId:t.u64().index('btree').unique(),      // entity id
+    imageId:t.u64(),                      // image id
     created_at: t.timestamp(),
   }
 );
+
+
 //-----------------------------------------------
 // 
 //-----------------------------------------------
