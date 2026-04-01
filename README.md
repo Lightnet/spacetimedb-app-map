@@ -6,10 +6,12 @@
 - spacetimedb 2.1.0
 
 # npm:
-- vanjs 1.6.0 (refs)
+- vanjs-core 1.6.0
+- vanjs-ui
 - three 0.183.2
 - spacetimedb 2.1.0
 - vite 8.0.0
+- tweakpane 4.0.5
 
 # Status:
 - Work in progress
@@ -92,6 +94,10 @@ spacetime sql --server local spacetime-app-map "SELECT * FROM map_mark"
 ```
 spacetime sql --server local spacetime-app-map "SELECT * FROM map_tile"
 ```
+```
+spacetime sql --server local spacetime-app-map "SELECT * FROM icon"
+```
+
 
 ## Notes:
 - Note the server module must match on export client module else it will error when api calls.
@@ -102,15 +108,25 @@ spacetime sql --server local spacetime-app-map "SELECT * FROM map_tile"
 # planet.html:
   Work in progress.
 - longitude, latitude
-- [ ] latLonToVector3
-- [ ] vector3ToLatLon
-- [ ] mouse to latitude,longitude on sphere
-- [ ] place marker base on latitude, longitude to 3d point
+- [x] latLonToVector3
+- [x] vector3ToLatLon
+- [x] mouse to latitude,longitude on sphere
+- [x] place marker base on latitude, longitude to 3d point
+- [x] drag marker
 - [ ] orbit test
 
 # mapping.html:
   Work in progress. Trying to keep it simple.
 - [ ] Grid Helper
+- [ ] image
+    - [x] upload
+    - [x] list
+    - [ ] delete
+- [ ] icon
+    - [x] create
+    - [ ] update
+    - [ ] delete
+    - [ ] size (need to scale when camera zoom in and out?)
 - [ ] ui
     - [x] markers list
     - [x] grid list
@@ -119,7 +135,8 @@ spacetime sql --server local spacetime-app-map "SELECT * FROM map_tile"
     - [x] delete
     - [ ]update
 - [ ] marker
+    - [x] option to add icon
     - [x] add
     - [x] delete
     - [x]update
-        - drag marker
+      - [x] drag marker
