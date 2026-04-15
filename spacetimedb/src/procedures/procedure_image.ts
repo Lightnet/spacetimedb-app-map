@@ -1,12 +1,14 @@
+//-----------------------------------------------
+// 
+//-----------------------------------------------
 import { t, SenderError  } from 'spacetimedb/server';
 import spacetimedb from '../module';
-
 //-----------------------------------------------
 // GET IMAGE
 //-----------------------------------------------
 // testing get image
 export const get_image = spacetimedb.procedure(
-  { id:t.u64() }, 
+  { id:t.string() }, 
   // t.object('Name', { data: t.array(t.u8()),type:t.string()  }),
   // t.object('AvatarResult', { 
   t.object('Name', { //return data if exist

@@ -15,10 +15,12 @@
 
 # Status:
 - Work in progress
+- need to rework that use transform3d
+- need work on triangle.
 
 # Information:
-  This is sample project build test. Note SpaceTimeDB has subject to change API and incorrect coding while in development.
-
+  This is prototype project build test for SpaceTimeDB. File change is subject to change and unstable currently.
+  
   Building the prototype mapping tool to able to creae tile grid and marker to create, update and delete markers in the world in 2.5 world.
 
 # Why SpacetimeDB?:
@@ -35,6 +37,9 @@
 - icons location
 - monster location
 - boss location
+- terrain editor
+- voxel
+- mesh table with triangle.
 
 # Set Up and Config
   Required SpaceTimeDB install to local machine or container. As well Bun install. WHich need to compile and build server and client.
@@ -105,7 +110,7 @@ spacetime sql --server local spacetime-app-map "SELECT * FROM icon"
 # Examples:
   Work in progress.
 
-# planet.html:
+# planet.html ( broken ):
   Work in progress.
 - longitude, latitude
 - [x] latLonToVector3
@@ -115,8 +120,9 @@ spacetime sql --server local spacetime-app-map "SELECT * FROM icon"
 - [x] drag marker
 - [ ] orbit test
 
-# mapping.html:
+# mapping.html ( broken ):
   Work in progress. Trying to keep it simple.
+- [ ] config
 - [ ] Grid Helper
 - [ ] image
     - [x] upload
@@ -133,10 +139,10 @@ spacetime sql --server local spacetime-app-map "SELECT * FROM icon"
 - [ ] tile
     - [x] add
     - [x] delete
-    - [ ]update
+    - [ ] update
 - [ ] marker
     - [x] option to add icon
     - [x] add
     - [x] delete
-    - [x]update
+    - [x] update
       - [x] drag marker

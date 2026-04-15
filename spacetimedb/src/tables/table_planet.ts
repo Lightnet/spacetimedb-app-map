@@ -1,42 +1,38 @@
 //-----------------------------------------------
 // TABLE Planet  
 //-----------------------------------------------
-import { schema, table, t, SenderError  } from 'spacetimedb/server';
-import { Coordinates } from '../types';
+import { table, t } from 'spacetimedb/server';
 // ----------------------------------------------
 // PLANET
 // ----------------------------------------------
-export const Planet = table(
-  { name: 'planet', public: true },
+export const planets = table(
+  { name: 'planets', public: true },
   {
-    // sender: t.identity(),
-    // owner: t.identity(),
-    id: t.u64().primaryKey().autoInc(),
-    // name: t.string().default(''),
-    // information: t.string().default(''),
-    position: Coordinates,
+    entityId: t.string().primaryKey(),
+    name: t.string().optional(),
+    information: t.string().optional(),
     created_at: t.timestamp(),
   }
 );
 //-----------------------------------------------
 // PLANET COORDINATE
 //-----------------------------------------------
-export const PlanetCoordinate = table(
-  { name: 'planet_coordinate', public: true },
+export const planetCoordinates = table(
+  { name: 'planet_coordinates', public: true },
   {
-    planetId: t.u64(),
-    position: Coordinates,
+    entityId: t.string().primaryKey(),
+    text:t.string().optional(),
     created_at: t.timestamp(),
   }
 );
 //-----------------------------------------------
 // PLANET MARKER
 //-----------------------------------------------
-export const PlanetMarker = table(
-  { name: 'planet_marker', public: true },
+export const planetMarkers = table(
+  { name: 'planet_markers', public: true },
   {
-    id: t.u64().primaryKey().autoInc(),
-    position: Coordinates,
+    entityId: t.string().primaryKey(),
+    text:t.string().optional(),
     created_at: t.timestamp(),
   }
 );

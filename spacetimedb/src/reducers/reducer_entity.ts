@@ -7,8 +7,8 @@ import spacetimedb from '../module';
 // CREATE ICON
 // ----------------------------------------------
 export const create_icon = spacetimedb.reducer({
- imageId: t.u64(),
- entityId: t.u64(),
+ imageId: t.string(),
+ entityId: t.string(),
 }, (ctx, { imageId, entityId }) => {
   console.log("create icon...")
     const _icon = ctx.db.icon.entityId.find(entityId)
@@ -16,7 +16,7 @@ export const create_icon = spacetimedb.reducer({
     if(!_icon){
       console.log("created icon...");
       ctx.db.icon.insert({
-        id: 0n,
+        id: ctx.newUuidV7().toString(),
         entityId: imageId,
         imageId: entityId,
         created_at: ctx.timestamp
@@ -30,8 +30,8 @@ export const create_icon = spacetimedb.reducer({
 // update entity icon by id
 // ----------------------------------------------
 export const update_icon = spacetimedb.reducer({
-  id: t.u64(),
-  imageId: t.u64(),
+  id: t.string(),
+  imageId: t.string(),
 }, (ctx, { id, imageId }) => {
   const _icon = ctx.db.icon.id.find(id)
   if(_icon){
@@ -43,7 +43,7 @@ export const update_icon = spacetimedb.reducer({
 // DELETE ICON
 // ----------------------------------------------
 export const delete_icon = spacetimedb.reducer({
- id: t.u64()
+ id: t.string()
 }, (ctx, { id }) => {
   ctx.db.icon.id.delete(id)
 });

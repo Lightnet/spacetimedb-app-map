@@ -3,27 +3,34 @@
 //-----------------------------------------------
 // import { ScheduleAt, Timestamp } from 'spacetimedb';
 import { schema, table, t, SenderError  } from 'spacetimedb/server';
-import { user } from './tables/table_user';
+import { users } from './tables/table_user';
 // import { userAvatar } from './tables/table_avatar_image';
 // import { message } from './tables/table_message';
-import { Planet, PlanetCoordinate, PlanetMarker  } from './tables/table_planet';
-import { MapMarker, MapTile } from './tables/table_mapping';
+import { planets, planetCoordinates, planetMarkers  } from './tables/table_planet';
 import { image } from './tables/table_image';
-import { icon } from './tables/table_entity';
+import { icon } from './tables/table_icon';
+import { text } from './tables/table_text';
+import { entity } from './tables/table_entity';
+import { transform3d } from './tables/table_transform3d';
+import { mapMarkers, mapTiles } from './tables/table_mapping';
 // ----------------------------------------------
 // SETUP TABLES
 // ----------------------------------------------
 const spacetimedb = schema({
-  user,
+  users,
   image,
   icon,
+  text,
+  // ENTITY
+  entity,
+  transform3d,
   //Mapping Tables
-  MapTile,
-  MapMarker,
+  mapTiles,
+  mapMarkers,
   // Planet Tables
-  Planet,
-  PlanetCoordinate,
-  PlanetMarker
+  planets,
+  planetCoordinates,
+  planetMarkers
 });
 // ----------------------------------------------
 // INIT MODULE
@@ -35,12 +42,12 @@ export const init = spacetimedb.init(_ctx => {
 // ONCONNECT
 // ----------------------------------------------
 export const onConnect = spacetimedb.clientConnected(ctx => {
-  const user = ctx.db.user.identity.find(ctx.sender);
+  const user = ctx.db.users.identity.find(ctx.sender);
   console.log("SENDER: ",ctx.sender);
   if (user) {
-    ctx.db.user.identity.update({ ...user, online: true });
+    ctx.db.users.identity.update({ ...user, online: true });
   } else {
-    ctx.db.user.insert({
+    ctx.db.users.insert({
       identity: ctx.sender,
       name: undefined,
       online: true,
@@ -51,9 +58,9 @@ export const onConnect = spacetimedb.clientConnected(ctx => {
 // ONDISCONNECT
 // ----------------------------------------------
 export const onDisconnect = spacetimedb.clientDisconnected(ctx => {
-  const user = ctx.db.user.identity.find(ctx.sender);
+  const user = ctx.db.users.identity.find(ctx.sender);
   if (user) {
-    ctx.db.user.identity.update({ ...user, online: false });
+    ctx.db.users.identity.update({ ...user, online: false });
   } else {
     console.warn(
       `Disconnect event for unknown user with identity ${ctx.sender}`

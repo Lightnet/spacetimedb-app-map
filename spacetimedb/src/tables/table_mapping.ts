@@ -1,30 +1,24 @@
 //-----------------------------------------------
 // TABLE Mapping
 //-----------------------------------------------
-import { schema, table, t, SenderError  } from 'spacetimedb/server';
-import { Coordinates } from '../types';
-// https://spacetimedb.com/docs/tables/
+import { table, t } from 'spacetimedb/server';
 //-----------------------------------------------
 // MAP TILE
 //-----------------------------------------------
-export const MapTile = table(
-  { name: 'map_tile', public: true },
+export const mapTiles = table(
+  { name: 'map_tiles', public: true },
   {
-    // owner: t.identity(),
-    id: t.u64().primaryKey().autoInc(),
-    position: Coordinates,
+    entityId: t.string().primaryKey(),
     created_at: t.timestamp(),
   }
 );
 //-----------------------------------------------
 // MAP MARK
 //-----------------------------------------------
-export const MapMarker = table(
-  { name: 'map_marker', public: true },
+export const mapMarkers = table(
+  { name: 'map_markers', public: true },
   {
-    // owner: t.identity(),
-    id: t.u64().primaryKey().autoInc(),
-    position: Coordinates,
+    entityId: t.string().primaryKey(),
     created_at: t.timestamp(),
   }
 );

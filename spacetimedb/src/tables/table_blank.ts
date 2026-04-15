@@ -1,9 +1,7 @@
 //-----------------------------------------------
 // TABLE BLANK
 //-----------------------------------------------
-// import { Timestamp } from 'spacetimedb';
-import { schema, table, t, SenderError  } from 'spacetimedb/server';
-// import spacetimedb from '../module';
+import { table, t } from 'spacetimedb/server';
 //-----------------------------------------------
 // 
 //-----------------------------------------------
@@ -15,6 +13,3 @@ export const blank = table(
     created_at: t.timestamp(),              // time stamp
   }
 );
-//-----------------------------------------------
-// 
-//-----------------------------------------------

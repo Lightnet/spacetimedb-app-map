@@ -46,6 +46,7 @@ export {
     onDisconnect,
     // image
     upload_image,
+    // entity
     // mapping
     create_map_tile,
     update_map_tile,

@@ -3,7 +3,7 @@
 // ----------------------------------------------
 import { schema, table, t, SenderError  } from 'spacetimedb/server';
 import spacetimedb from '../module';
-import { validateMessage } from '../helper';
+import { validateMessage } from '../helpers/helper';
 // ----------------------------------------------
 // 
 // ----------------------------------------------

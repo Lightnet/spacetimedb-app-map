@@ -1,7 +1,7 @@
 //-----------------------------------------------
 // TABLE EVENT
 //-----------------------------------------------
-import { schema, table, t, SenderError  } from 'spacetimedb/server';
+import { table, t } from 'spacetimedb/server';
 //-----------------------------------------------
 // Message Event
 //-----------------------------------------------

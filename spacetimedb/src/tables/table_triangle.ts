@@ -1,16 +1,20 @@
 //-----------------------------------------------
-// TABLE Message
+// TABLE BLANK
 //-----------------------------------------------
 import { table, t } from 'spacetimedb/server';
+import { Vect3 } from '../types/types';
 //-----------------------------------------------
 // 
 //-----------------------------------------------
-export const message = table(
-  { name: 'message', public: true },
+export const triangles = table(
+  { name: 'triangles', public: true },
   {
-    sender: t.identity(),
-    sent: t.timestamp(),
-    text: t.string(),
+    entityId: t.string().primaryKey(),     // id
+    v0:Vect3,         // Vector3
+    v1:Vect3,         // Vector3
+    v2:Vect3,         // Vector3
+    color:t.string().optional(),
+    created_at: t.timestamp(),              // time stamp
   }
 );
 //-----------------------------------------------
