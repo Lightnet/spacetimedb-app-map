@@ -2,8 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
 import {Pane} from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
-// import van from "https://cdn.jsdelivr.net/gh/vanjs-org/van/public/van-1.6.0.min.js";
-import van from "vanjs-core";
+import van from "https://cdn.jsdelivr.net/gh/vanjs-org/van/public/van-1.6.0.min.js";
 import { ViewportGizmo } from "three-viewport-gizmo";
 import { 
   FloatingWindow,
@@ -11,6 +10,7 @@ import {
 } from "vanjs-ui"
 
 import { DbConnection, tables } from './module_bindings';
+import { transform } from 'typescript';
 
 const HOST = 'ws://localhost:3000';
 const DB_NAME = 'spacetime-app-map';
@@ -48,11 +48,11 @@ const MappingConfig = {
   isDrag:false,           // object3d drag
 
   markerFolders: [],      // panel folder
-  markerRows: [],         // table
+  markerRows: [],         //table
   tileFolders: [],        // panel folders
   tileRows: [],           // table
   images: [],             // table images
-  icons: [],              // table image data
+  icons: [],              // image data
   modeType:"OBJECT",      //["OBJECT","EDIT"]
   buildTypes: [
     // {text:'Grid', value:'GRID'},
@@ -61,9 +61,8 @@ const MappingConfig = {
     {text:'Voxel', value:'VOXEL'},
     {text:'Text', value:'TEXT'},
   ],
-  entities:[],      // table
-  transform3d:[],   // table
-  maptiles:[],      // table
+  entities:[],
+  transform3d:[],
 }
 
 let paneMarker;
@@ -115,7 +114,7 @@ function setupDB(){
   setupDBEntity();
   setupDBTransform3D();
   setupDBMarker();
-  setupDBMapTile();
+  // setupDBMapTile();
 }
 //-----------------------------------------------
 //
@@ -146,6 +145,7 @@ function setupDBEntity(){
 //-----------------------------------------------
 // TRANSFORM 3D
 //-----------------------------------------------
+
 function update_model_transform3d(row){
   const smesh = scene.children.find(r=>r.userData?.row?.entityId == row.entityId);
   if(smesh){
@@ -156,6 +156,7 @@ function update_model_transform3d(row){
     )
   }
 }
+
 
 function onInsert_Transform3D(ctx, row){
   // console.log("insert Transform3D:", row)
@@ -232,7 +233,7 @@ function update_pane_marker(){
   MappingConfig.markerFolders.forEach(f => f.dispose());
   MappingConfig.markerFolders = [];
   MappingConfig.markerRows.forEach((entity, index) => {
-    // console.log("MappingConfig.markerRows entity:", entity)
+    console.log("MappingConfig.markerRows entity:", entity)
     const folder = paneMarker.addFolder({
       title: `${entity.entityId} Marker`,
       expanded: false,
@@ -263,13 +264,13 @@ function loadIconId(){
 }
 
 function update_model_marker_transform3d(mesh, row){
-  // console.log(row);
+  console.log(row);
   mesh.position.set(row.position.x, row.position.y, row.position.z);
 }
 
 function onInsert_MapMarker(ctx, row){
   MappingConfig.markerRows.push(row);
-  // console.log("map maker row:", row);
+  console.log("map maker row:", row);
   //check if marker transform 3d entity
   const t3 = MappingConfig.transform3d.find(r=>r.entityId == row.entityId);
   // console.log("marker transform...", MappingConfig.transform3d);
@@ -332,76 +333,49 @@ function setupDBMarker(){
 //-----------------------------------------------
 // MAP TILE
 //-----------------------------------------------
-function update_pane_tile(){
+function update_pane_tile(row){
   MappingConfig.tileFolders.forEach(f => f.dispose());
   MappingConfig.tileFolders = [];
   MappingConfig.tileRows.forEach((entity, index) => {
     // console.log("MappingConfig.tileRows entity:", entity)
     const folder = paneGrid.addFolder({
       // title: `${entity.name} (ID: ${entity.id})`,
-      title: `${entity.entityId} Tile`,
+      title: `${entity.id} Tile`,
       expanded: false,
     });
     // folder.addBinding(entity, 'id', { label: 'Name' });
-    
+    folder.addBinding(entity, 'position', {  });
     folder.addButton({title:'Select'}).on('click',()=>{
-      const t3 = scene.children.find(r=>r.entityId == entity.entityId);
-
-      if(t3){
-        folder.addBinding(t3, 'position', {  });
-        axesHelper.position.set(t3.position.x,t3.position.y,t3.position.z);
-      }
-
-      
+      axesHelper.position.set(entity.position.x,entity.position.y,entity.position.z);
     });
     MappingConfig.tileFolders.push(folder);
   });
 }
 
-function update_model_tile_transform3d(mesh, row){
-  mesh.position.set(row.position.x, row.position.y, row.position.z);
-}
-
-
 function onInsert_MapTile(ctx, row){
-  MappingConfig.maptiles.push(row);
-  console.log("map tile: ", row)
-  const t3 = MappingConfig.transform3d.find(r=>r.entityId == row.entityId);
-
-  if(t3){
-    console.log("found map tile: ",t3);
-    const _tileMap = create_tile();  
-    update_model_tile_transform3d(_tileMap, t3);
+  // console.log("map tile:", row);
+  let isFound = false;
+  for (let i = 0; i < scene.children.length; i++) {
+    const object3d = scene.children[i];
+    if(object3d.userData?.row?.id == row.id){
+      isFound=true;
+      break;
+    }
+  }
+  if(isFound==false){
+    const _tileMap = create_tile();
+    _tileMap.position.set(row.position.x, row.position.y, row.position.z);
+    _tileMap.userData.row = row;
     scene.add(_tileMap);
     grids.push(_tileMap);
-    // update_pane_tile();
+    const isDuplicate = MappingConfig.tileRows.some(r => r.id === row.id);
+    // console.log("isDuplicate:", isDuplicate);
+    if (!isDuplicate) {
+      MappingConfig.tileRows.push(row);
+    }
+    update_pane_tile();
   }
 }
-
-// function onInsert_MapTile(ctx, row){
-  // console.log("map tile:", row);
-  // let isFound = false;
-  // for (let i = 0; i < scene.children.length; i++) {
-  //   const object3d = scene.children[i];
-  //   if(object3d.userData?.row?.id == row.id){
-  //     isFound=true;
-  //     break;
-  //   }
-  // }
-  // if(isFound==false){
-  //   const _tileMap = create_tile();
-  //   _tileMap.position.set(row.position.x, row.position.y, row.position.z);
-  //   _tileMap.userData.row = row;
-  //   scene.add(_tileMap);
-  //   grids.push(_tileMap);
-  //   const isDuplicate = MappingConfig.tileRows.some(r => r.id === row.id);
-  //   // console.log("isDuplicate:", isDuplicate);
-  //   if (!isDuplicate) {
-  //     MappingConfig.tileRows.push(row);
-  //   }
-  //   update_pane_tile();
-  // }
-// }
 
 function onUpdate_MapTile(ctx, oldRow, newRow){
 
@@ -926,11 +900,11 @@ function setup_editor_panel(){
   });
 
   pane.addBlade({
-    view: 'list',
-    label: 'Build Type',
-    options: MappingConfig.buildTypes,
-    value: 'MARKER',
-  });
+  view: 'list',
+  label: 'Build Type',
+  options: MappingConfig.buildTypes,
+  value: 'MARKER',
+});
 
   const selectFolder = pane.addFolder({title: 'Build Select'});
 

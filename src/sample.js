@@ -1,50 +1,60 @@
-import * as THREE from 'three';
 
-// 1. Scene, camera, renderer
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(
-  75,
-  window.innerWidth / window.innerHeight,
-  0.1,
-  1000
-);
+import { stateConn } from './context';
+import { setupDBEntity } from './db/dbentity';
+import { setupDBMapTile } from './db/dbmaptile';
+import { setupDBMapMarker } from './db/dbmapmarker';
+import { setupDBTransform3D } from './db/dbtransform3d';
+import { DbConnection, tables } from './module_bindings';
+import { setupPane } from './pane_tool';
+import { setupThree } from './render';
+const HOST = 'ws://localhost:3000';
+const DB_NAME = 'spacetime-app-map';
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio); // ← nicer on high-dpi screens
-document.body.appendChild(renderer.domElement);
+const conn = DbConnection.builder()
+  .withUri(HOST)
+  .withDatabaseName(DB_NAME)
+  .withToken(localStorage.getItem('auth_token') || undefined)
+  .onConnect((conn, identity, token) => {
+    localStorage.setItem('auth_token', token);
+    console.log("connect...");
+    stateConn.val = conn;
+    setup();
+  })
+  .onDisconnect(() => {
+    console.log('Disconnected from SpacetimeDB');
+    // el_status.val = 'Disconnected';
+  })
+  .onConnectError((_ctx, error) => {
+    console.error('Connection error:', error);
+    // statusEl.textContent = 'Error: ' + error.message;
+    // statusEl.style.color = 'red';
+  })
+  .build();
 
-// 2. Cube
-const geometry = new THREE.BoxGeometry(1, 1, 1);
-const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-const cube = new THREE.Mesh(geometry, material);
-scene.add(cube);
-
-camera.position.z = 5;
-
-// 3. Handle window resize
-function onWindowResize() {
-  // Update camera aspect ratio
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();   // ← very important!
-
-  // Update renderer size
-  renderer.setSize(window.innerWidth, window.innerHeight);
+function setup(){
+  // setup in order
+  setupThree();
+  setupPane();
+  setupDBEntity();
+  setupDBMapTile();
+  setupDBMapMarker();
+  setupDBTransform3D();
 }
 
-// 4. Animation loop
-function animate() {
-  requestAnimationFrame(animate);
 
-  cube.rotation.x += 0.01;
-  cube.rotation.y += 0.01;
 
-  renderer.render(scene, camera);
-}
 
-// ────────────────────────────────────────────────
 
-window.addEventListener('resize', onWindowResize);
-animate();
 
-console.log("Three.js cube example with resize support");
+
+
+
+
+
+
+
+
+
+
+
+
