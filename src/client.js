@@ -142,7 +142,6 @@ function setupDBEntity(){
   conn.db.entity.onUpdate(onUpdate_Entity);
   conn.db.entity.onDelete(onDelete_Entity);
 }
-
 //-----------------------------------------------
 // TRANSFORM 3D
 //-----------------------------------------------
@@ -362,7 +361,6 @@ function update_model_tile_transform3d(mesh, row){
   mesh.position.set(row.position.x, row.position.y, row.position.z);
 }
 
-
 function onInsert_MapTile(ctx, row){
   MappingConfig.maptiles.push(row);
   console.log("map tile: ", row)
@@ -370,7 +368,7 @@ function onInsert_MapTile(ctx, row){
 
   if(t3){
     console.log("found map tile: ",t3);
-    const _tileMap = create_tile();  
+    const _tileMap = create_tile();
     update_model_tile_transform3d(_tileMap, t3);
     scene.add(_tileMap);
     grids.push(_tileMap);

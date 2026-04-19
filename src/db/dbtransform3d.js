@@ -2,8 +2,8 @@
 // 
 //-----------------------------------------------
 import { DbConnection, tables } from '../module_bindings';
-import { dbMapMarkers, dbMapTiles, dbTransform3ds, stateConn, stateGrids, stateMarkers, stateScene } from "../context";
-import { addOrUpdateEntity } from '../helper';
+import { dbMapMarkers, dbMapTiles, dbTransform3ds, stateConn, stateGrids, stateMarkers, stateScene, stateSelectEntityId } from "../context";
+import { addOrUpdateEntity, deleteEntity } from '../helper';
 import { create_model_marker, create_tile } from '../render';
 
 function update_transform3d_position(mesh, row){
@@ -13,8 +13,9 @@ function update_transform3d_position(mesh, row){
 function create_model_check(row){
   const mapTile = dbMapTiles.val.get(row.entityId);
   if(mapTile){
-    console.log("found map tile:", mapTile);
+    // console.log("found map tile:", mapTile);
     const _tileMap = create_tile();
+    _tileMap.userData.row = row;
     const scene = stateScene.val;
     update_transform3d_position(_tileMap, row);
     scene.add(_tileMap);
@@ -32,6 +33,7 @@ function create_model_check(row){
 }
 
 function update_model_transform3d(row){
+  const scene = stateScene.val;
   const smesh = scene.children.find(r=>r.userData?.row?.entityId == row.entityId);
   if(smesh){
     smesh.position.set(
@@ -42,6 +44,14 @@ function update_model_transform3d(row){
   }
 }
 
+function onDelete_mesh(row){
+  const scene = stateScene.val;
+  const mesh = scene.children.find(r=>r.userData?.row?.entityId == row.entityId)
+  if(mesh){
+    scene.remove(mesh);
+  }
+}
+
 function onInsert_Entity(ctx, row){
   // console.log("insert transform3d:", row);
   addOrUpdateEntity(dbTransform3ds,row);
@@ -49,10 +59,14 @@ function onInsert_Entity(ctx, row){
 }
 function onUpdate_Entity(ctx,oldRow, newRow){
   addOrUpdateEntity(dbTransform3ds, newRow);
-  update_model_transform3d(newRow)
+  if(stateSelectEntityId.val != newRow.entityId){
+    update_model_transform3d(newRow)
+  }
+  
 }
 function onDelete_Entity(ctx,row){
-  deleteEntity(dbTransform3ds, row.entityId)
+  deleteEntity(dbTransform3ds, row.entityId);
+  onDelete_mesh(row);
 }
 export function setupDBTransform3D(){
   const conn = stateConn.val;

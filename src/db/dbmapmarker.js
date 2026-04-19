@@ -6,7 +6,7 @@ import { dbMapMarkers, stateConn } from "../context";
 import { addOrUpdateEntity, deleteEntity } from '../helper';
 
 function onInsert_MapTile(ctx, row){
-  console.log("insert Map Tile:", row);
+  // console.log("insert Map Tile:", row);
   addOrUpdateEntity(dbMapMarkers, row);
 }
 function onUpdate_MapTile(ctx,oldRow, newRow){

@@ -42,7 +42,7 @@ export const create_map_tile = spacetimedb.reducer(
       worldMatrix: undefined
     });
 
-    ctx.db.mapMarkers.insert({
+    ctx.db.mapTiles.insert({
       created_at: ctx.timestamp,
       entityId: ranId
     });

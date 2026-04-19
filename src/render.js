@@ -5,7 +5,7 @@ import {Pane} from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.
 import van from "vanjs-core";
 import { ViewportGizmo } from "three-viewport-gizmo";
 import { degrees_to_radians } from './helper';
-import { PARAMS, stateGrid3DPosition, stateGridSize, stateIntersectionPoint, stateMarker, statePHPlane, statePointer2D, statePointer3D, stateRaycaster, stateScene } from './context';
+import { PARAMS, stateBuildSelect, stateConn, stateGrid3DPosition, stateGridSize, stateIntersectionPoint, stateIsDrag, stateMarker, stateMarkers, stateOrbitControl, statePHPlane, statePointer2D, statePointer3D, stateRaycaster, stateScene, stateSelectEntityId } from './context';
 
 //-----------------------------------------------
 // THRREE JS
@@ -53,6 +53,7 @@ function setup_lights(){
 // ────────────────────────────────────────────────
 function setup_camera_controllers(){
   controls = new OrbitControls( camera, renderer.domElement );
+  stateOrbitControl.val = controls;
   gizmo = new ViewportGizmo(camera, renderer,{
     placement: "bottom-right",
   });
@@ -229,19 +230,196 @@ function onPointer3DPlaneMove(event){
   }
 }
 
+//-----------------------------------------------
+// PLACE TYPES
+//-----------------------------------------------
+function place_tile_grid(){
+  let isFound = false;
+  const gridPosition = stateGrid3DPosition.val;
+  for (const objModel of scene.children) {
+    // Access child properties
+    if(
+      (objModel.position.x == gridPosition.x)&&
+      (objModel.position.y == gridPosition.y)&&
+      (objModel.position.z == gridPosition.z)){
+      if(objModel?.userData?.type=='tile'){
+        isFound=true;
+        console.log("FOUND SAME POSITION");
+      }
+    }
+  }
+  if(!isFound){
+    const conn = stateConn.val;
+    conn.reducers.createMapTile({
+      x:gridPosition.x,
+      y:gridPosition.y,
+      z:gridPosition.z,
+    })
+  }
+}
 
+function delete_tile_grid(){
+  // let isFound = false;
+  const conn = stateConn.val;
+  const gridPosition = stateGrid3DPosition.val;
+  for (const objModel of scene.children) {
+    // Access child properties
+    if(
+      (objModel.position.x == gridPosition.x)&&
+      (objModel.position.y == gridPosition.y)&&
+      (objModel.position.z == gridPosition.z)){
+      if(objModel?.userData?.type=='tile'){
+        console.log(objModel.userData);
+        // isFound=true;
+        console.log("FOUND SAME POSITION");
+        conn.reducers.deleteMapTile({id:objModel.userData.row.entityId});
+        break;
+      }
+    }
+  }
+}
 
+function place_marker(){
+  try {
+    const conn = stateConn.val;
+    conn.reducers.createMapMarker({
+      x:statePointer3D.val.x,
+      y:statePointer3D.val.y,
+      z:statePointer3D.val.z,
+    })
+  } catch (error) {
+    console.log("conn place marker error");
+  }
+}
+
+function delete_marker(){
+  // statePointer2D
+  const pointer = statePointer2D.val;
+  raycaster.setFromCamera(pointer, camera);
+  const markers = stateMarkers.val;
+  const intersects = raycaster.intersectObjects(markers, false);
+  if (intersects.length > 0) {
+    console.log("intersect...");
+    const obj = intersects[0].object;
+    console.log(obj);
+    axesHelper.position.copy(obj.position);
+    if(obj.userData?.tag === "Marker"){
+      stateSelectEntityId.val = obj.userData?.row?.entityId
+      console.log("FOUND TO DELETE?");
+      try {
+        const conn = stateConn.val;
+        if(obj.userData?.row?.entityId){
+          conn.reducers.deleteMapMarker({
+            id:obj.userData?.row.entityId
+          });
+        }
+      } catch (error) {
+        console.log("delete marker error ")
+      }
+    }
+  }
+}
+
+function onKeyDown(event){
+  console.log(event.code);
+
+  if(event.code == 'KeyB'){
+    if(stateBuildSelect.val == 'MARKER'){
+      console.log('MARKER');
+      place_marker();
+    }
+
+    if(stateBuildSelect.val == 'TILE'){
+      console.log('TILE');
+      place_tile_grid();
+    }
+  }
+  if(event.code == 'KeyX'){
+    if(stateBuildSelect.val == 'TILE'){
+      delete_tile_grid();
+    }
+    if(stateBuildSelect.val == 'MARKER'){
+      delete_marker();
+    }
+  }
+
+  if(event.code == 'Tab'){
+    if(stateOrbitControl.val){
+      stateOrbitControl.val.enabled = !stateOrbitControl.val.enabled;
+    }
+  }
+}
+//-----------------------------------------------
+// DRAG
+//-----------------------------------------------
+const raycaster = new THREE.Raycaster();
+let selectedObject = null;
+function onMouseDown(event){
+  let pointer = new THREE.Vector3();
+  if (event.button !== 0) return; // left click only
+  pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+  pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const markers = stateMarkers.val;
+  const intersects = raycaster.intersectObjects(markers, false);
+  if (intersects.length > 0) {
+    console.log("intersect...");
+    const obj = intersects[0].object;
+    console.log(obj);
+    axesHelper.position.copy(obj.position);
+    if(obj.userData?.tag === "Marker"){
+      stateSelectEntityId.val = obj.userData?.row?.entityId
+      selectedObject = obj; // your group
+    }
+  }
+  if(selectedObject){
+    stateOrbitControl.val.enabled = false;
+    stateIsDrag.val = true;
+  }
+}
+
+function onMouseMoveDrag(event){
+  if (!selectedObject || !stateIsDrag.val) return;
+  // ray cast plane ???
+  if(selectedObject){
+    const pointer3d = statePointer3D.val;
+    selectedObject.position.copy(pointer3d);
+    try {
+      if(selectedObject.userData?.row){
+        console.log("update?");
+        const conn = stateConn.val;
+        conn.reducers.updateMapMarker({
+          id:selectedObject.userData.row.entityId,
+          x:pointer3d.x,
+          y:pointer3d.y,
+          z:pointer3d.z,
+        })
+      }
+    } catch (error) {
+      console.log("conn drag marker error!");
+    }
+  }
+}
+
+function onMouseUp(event){
+  if (selectedObject) {
+    stateOrbitControl.val.enabled = true;
+    stateIsDrag.val = false;
+    selectedObject = null;
+    stateSelectEntityId.val=null;
+  }
+}
 
 //-----------------------------------------------
 // LISTEN
 //-----------------------------------------------
 function setupListens(){
-  // window.addEventListener('mousedown', onMouseDown);
-  // window.addEventListener('mousemove', onMouseMoveDrag);   // keep your existing onPointerMove for the pointer3d / tile preview
-  // window.addEventListener('mouseup', onMouseUp);
+  window.addEventListener('mousedown', onMouseDown);
+  window.addEventListener('mousemove', onMouseMoveDrag);   // keep your existing onPointerMove for the pointer3d / tile preview
+  window.addEventListener('mouseup', onMouseUp);
   window.addEventListener('resize', onWindowResize);
   window.addEventListener('pointermove', onPointer3DPlaneMove);
-  // window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('keydown', onKeyDown);
 }
 //-----------------------------------------------
 // SETUP RENDER AND SCENE

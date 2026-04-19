@@ -43,7 +43,7 @@ export const init = spacetimedb.init(_ctx => {
 // ----------------------------------------------
 export const onConnect = spacetimedb.clientConnected(ctx => {
   const user = ctx.db.users.identity.find(ctx.sender);
-  console.log("SENDER: ",ctx.sender);
+  // console.log("SENDER: ",ctx.sender);
   if (user) {
     ctx.db.users.identity.update({ ...user, online: true });
   } else {

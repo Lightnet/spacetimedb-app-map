@@ -1,7 +1,7 @@
 
 
 import {Pane} from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
-import { stateBuildSelect, buildTypes, dbMapTiles, PARAMS, stateGrid3DPosition, stateIntersectionPoint, stateIsDrag, statePointer2D, statePointer3D } from './context';
+import { stateBuildSelect, buildTypes, dbMapTiles, PARAMS, stateGrid3DPosition, stateIntersectionPoint, stateIsDrag, statePointer2D, statePointer3D, stateOrbitControl } from './context';
 import van from "vanjs-core";
 
 const {div } = van.tags;
@@ -18,6 +18,9 @@ function setupEditorPane(){
 
   const cursorFolder = pane.addFolder({title:"Cursor"});
 
+  const orbitControlFolder = pane.addFolder({title:"OrbitControl"});
+  orbitControlFolder.addBinding(stateOrbitControl.val,'enabled');
+
   cursorFolder.addBinding(stateIsDrag,'val',{label:'Is Drag'})
 
   const cursorPlaneFolder = cursorFolder.addFolder({title:"3D Pointer Plane"});
@@ -33,19 +36,24 @@ function setupEditorPane(){
   
 
   const buildFolder = cursorFolder.addFolder({title:"Build"});
+
+  let buildType = localStorage.getItem('BUILDTYPE') ?? 'TILE';
+
+
   buildFolder.addBlade({
     view: 'list',
     label: 'Build Type',
     options: buildTypes.val,
-    value: 'MARKER',
+    value: buildType,
   }).on('change',(e)=>{
     stateBuildSelect.val = e.value;
+    localStorage.setItem('BUILDTYPE', e.value);
   })
   buildFolder.addBinding(stateBuildSelect, 'val', {label:'Select', readonly:true})
 }
 
 function UITool(){
-  console.log(div);
+  // console.log(div);
   return div({style:`position:fixed; top:0px; left:0px;background-color:gray;`},
     "test"
   );

@@ -103,7 +103,6 @@ spacetime sql --server local spacetime-app-map "SELECT * FROM map_tile"
 spacetime sql --server local spacetime-app-map "SELECT * FROM icon"
 ```
 
-
 ## Notes:
 - Note the server module must match on export client module else it will error when api calls.
 
@@ -120,16 +119,17 @@ spacetime sql --server local spacetime-app-map "SELECT * FROM icon"
 - [x] drag marker
 - [ ] orbit test
 
-# mapping.html ( broken ):
+# index:
+- mapping.html ( broken ):
   Work in progress. Trying to keep it simple.
 - [ ] config
 - [ ] Grid Helper
 - [ ] image
-    - [x] upload
-    - [x] list
+    - [ ] upload
+    - [ ] list
     - [ ] delete
 - [ ] icon
-    - [x] create
+    - [ ] create
     - [ ] update
     - [ ] delete
     - [ ] size (need to scale when camera zoom in and out?)

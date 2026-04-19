@@ -15,8 +15,9 @@ export const buildTypes = van.state([
   {text:'Voxel', value:'VOXEL'},
   {text:'Text', value:'TEXT'},
 ]);
-
-export const stateBuildSelect = van.state('MARKER');
+//localstroage
+let buildType = localStorage.getItem('BUILDTYPE') ?? 'TILE';
+export const stateBuildSelect = van.state(buildType);
 
 
 // THREEE
@@ -30,6 +31,10 @@ export const stateGridSize = van.state(32.0);
 export const stateGrids = van.state([]); // meshes
 export const stateMarkers = van.state([]); // meshes
 
+export const stateSelectObject = van.state(null);
+export const stateSelectEntityId = van.state(null);
+
+// export const stateToggleOrbit = van.state(true); //
 
 export const stateDragOffset = van.state(new THREE.Vector3()); // world-space offset from click point to marker center
 export const stateDragPlane = van.state(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)); // world-space offset from click point to marker center
