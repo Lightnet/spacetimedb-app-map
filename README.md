@@ -129,8 +129,8 @@ spacetime sql --server local spacetime-app-map "SELECT * FROM icon"
     - [x] list
     - [ ] delete
 - [ ] icon
-    - [ ] create
-      - [x] marker
+    - [x] create
+        - [x] marker
     - [ ] update
     - [ ] delete
     - [ ] size (need to scale when camera zoom in and out?)
@@ -147,3 +147,8 @@ spacetime sql --server local spacetime-app-map "SELECT * FROM icon"
     - [x] delete
     - [x] update
       - [x] drag marker
+    - [ ] icon
+      - [ ] offset
+
+## Map marker:
+  Work in progress. Testing the offset position build.

@@ -1,12 +1,11 @@
 
 
 import {Pane} from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
-import { stateBuildSelect, buildTypes, dbMapTiles, PARAMS, stateGrid3DPosition, stateIntersectionPoint, stateIsDrag, statePointer2D, statePointer3D, stateOrbitControl, dbImages, stateConn, stateSelectImageId, dbMapMarkers, stateSelectMarkerId, dbTransform3ds, stateAxeHelper } from './context';
+import { stateBuildSelect, buildTypes, dbMapTiles, PARAMS, stateGrid3DPosition, stateIntersectionPoint, stateIsDrag, statePointer2D, statePointer3D, stateOrbitControl, dbImages, stateConn, stateSelectImageId, dbMapMarkers, stateSelectMarkerId, dbTransform3ds, stateAxeHelper, stateStatus } from './context';
 import van from "vanjs-core";
 import { FloatingWindow, MessageBoard} from "vanjs-ui";
-import { label } from 'three/tsl';
 
-const {div, input, button, img, p} = van.tags;
+const {div, label, input, button, img, p} = van.tags;
 
 // note does not update by THREE.VECTOR3
 function setupEditorPane(){
@@ -121,33 +120,25 @@ function setupEditorPane(){
     });
   });
 
-  
-
-
-
-
 }
 
 function UITool(){
   // console.log(div);
   return div({style:`position:fixed; top:0px; left:0px;background-color:gray;`},
-    "test"
+    
+    label("Status:"),
+    label(()=>stateStatus.val),
   );
 }
 
 function setupSelectPanel(){
-
-
-
   van.add(document.body, UITool())
 }
-
 
 export function setupPane(){
   setupEditorPane();
   setupSelectPanel();
 }
-
 
 function open_window_upload(){
   van.add(document.body, window_upload_image())

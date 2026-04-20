@@ -3,6 +3,10 @@ import van from "vanjs-core";
 
 // Spacetimedb
 export const stateConn = van.state(null);
+
+export const stateStatus = van.state('Offline');
+
+
 export const dbEntities = van.state(new Map());
 export const dbMapTiles = van.state(new Map());
 export const dbMapMarkers = van.state(new Map());

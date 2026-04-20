@@ -72,15 +72,24 @@ function create_grid_helper(){
 // Pointer Geometry
 //-----------------------------------------------
 export function create_model_marker(){
-  const t_geometry = new THREE.ConeGeometry( 4, 8, 4 );
-  const t_material = new THREE.MeshBasicMaterial({
+  const ObjMarker = new THREE.Group();
+
+
+  const geometry = new THREE.ConeGeometry( 4, 8, 4 );
+  const material = new THREE.MeshBasicMaterial({
     color: 0xffff00,
     wireframe:true
   });
-  const _marker = new THREE.Mesh( t_geometry, t_material );
-  _marker.rotation.x = Math.PI;
-  _marker.userData.tag='Marker';
-  return _marker;
+  // geometry.rotation.x = Math.PI;
+  geometry.rotateX(Math.PI); 
+  const _pointer = new THREE.Mesh( geometry, material );
+  // _marker.rotation.x = Math.PI;
+  _pointer.userData.tag='Marker';
+  _pointer.position.set(0,4,0);
+  // return _marker;
+  ObjMarker.add(_pointer);
+
+  return ObjMarker;
 }
 // ────────────────────────────────────────────────
 // PLANE
@@ -320,7 +329,9 @@ function delete_marker(){
     }
   }
 }
-
+//-----------------------------------------------
+// INPUT
+//-----------------------------------------------
 function onKeyDown(event){
   console.log(event.code);
 
@@ -362,7 +373,7 @@ function onMouseDown(event){
   pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
   raycaster.setFromCamera(pointer, camera);
   const markers = stateMarkers.val;
-  const intersects = raycaster.intersectObjects(markers, false);
+  const intersects = raycaster.intersectObjects(markers, true);
   if (intersects.length > 0) {
     console.log("intersect...");
     const obj = intersects[0].object;
@@ -370,8 +381,10 @@ function onMouseDown(event){
     axesHelper.position.copy(obj.position);
     
     if(obj.userData?.tag === "Marker"){
-      stateSelectEntityId.val = obj.userData?.row?.entityId
-      selectedObject = obj; // your group
+      console.log("marker detect ray cast");
+      stateSelectEntityId.val = obj.parent.userData?.row?.entityId
+      console.log(stateSelectEntityId.val);
+      selectedObject = obj.parent; // your group
     }
   }
   if(selectedObject){
@@ -385,7 +398,11 @@ function onMouseMoveDrag(event){
   // ray cast plane ???
   if(selectedObject){
     const pointer3d = statePointer3D.val;
-    selectedObject.position.copy(pointer3d);
+    if(selectedObject){
+      // console.log("move???");
+      selectedObject.position.copy(pointer3d);
+      // selectedObject.parent.position.copy(pointer3d);
+    }
     try {
       if(selectedObject.userData?.row){
         console.log("update?");

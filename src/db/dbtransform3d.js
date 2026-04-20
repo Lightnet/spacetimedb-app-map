@@ -35,8 +35,25 @@ function check_icon_make(mesh, row){
         const mesh = new THREE.Mesh(geometry, material);
         const scene = stateScene.val;
         const marker = scene.children.find(r=>r.userData?.row?.entityId == row.entityId)
+
         if(marker){
           marker.add(mesh);
+
+          const offset = new THREE.Vector3(0, 9, 0);
+          // mesh.position.copy(marker.worldToLocal(offset.clone().add(marker.getWorldPosition(new THREE.Vector3()))));
+          mesh.position.set(0,16,0);
+
+          // 1. Get the marker's current world position
+          // const markerWorldPos = new THREE.Vector3();
+          // marker.getWorldPosition(markerWorldPos);   // or .setFromMatrixPosition(marker.matrixWorld)
+          // // 2. Add your desired world offset (0, 9, 0)
+          // const desiredWorldPos = markerWorldPos.clone().add(new THREE.Vector3(0, 9, 0));
+          // // 3. Convert that desired world position into the marker's LOCAL space
+          // const localPos = marker.worldToLocal(desiredWorldPos.clone());
+          // // 4. Apply it to the mesh
+          // mesh.position.copy(localPos);
+          // // mesh.updateMatrixWorld(true);
+
         }
         // Optional: Clean up the blob URL after the texture is uploaded to GPU
         // URL.revokeObjectURL(tempUrl); 
