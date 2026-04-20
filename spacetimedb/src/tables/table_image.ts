@@ -5,8 +5,8 @@ import { table, t } from 'spacetimedb/server';
 //-----------------------------------------------
 // 
 //-----------------------------------------------
-export const image = table(
-  { name: 'image', public: true },
+export const images = table(
+  { name: 'images', public: true },
   {
     id: t.string().primaryKey(),
     name: t.string(),

@@ -11,30 +11,22 @@ export const upload_image = spacetimedb.reducer({
   mimeType: t.string(),
   data: t.array(t.u8()),
 }, (ctx, {name, mimeType, data }) => {
+  const nameId = ctx.newUuidV7().toString();
   // Insert new avatar
-  const _image = ctx.db.image.insert({
-    id:0n,
+  const _image = ctx.db.images.insert({
+    id:nameId,
     name,
     mimeType,
     data,
     uploadedAt: ctx.timestamp,
   });
-  console.log("_image:", _image);
+  // console.log("_image:", _image);
 });
 // ----------------------------------------------
 // 
 // ----------------------------------------------
-export const upload_text_image = spacetimedb.reducer({
-  mimeType: t.string(),
-  data: t.array(t.u8()),
-}, (ctx, { mimeType, data }) => {
-  // Delete existing avatar if present
-  // ctx.db.userAvatar.userId.delete(userId);
-  // // Insert new avatar
-  // ctx.db.userAvatar.insert({
-  //   userId,
-  //   mimeType,
-  //   data,
-  //   uploadedAt: ctx.timestamp,
-  // });
+export const delete_image = spacetimedb.reducer({
+  id: t.string(),
+}, (ctx, { id }) => {
+  ctx.db.images.id.delete(id);
 });

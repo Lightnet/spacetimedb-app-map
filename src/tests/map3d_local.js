@@ -21,6 +21,8 @@ function degrees_to_radians(degrees){
 var grid_size = 32.0;
 var pointer3d = new THREE.Vector3();
 var place_grid = new THREE.Vector3();
+var longitude = 0; // y
+var latitude  = 0; // x
 
 const MappingConfig = {
   myBoolean: true,
@@ -478,7 +480,6 @@ window.addEventListener('mousedown', onMouseDown);
 window.addEventListener('mousemove', onMouseMoveDrag);   // keep your existing onPointerMove for the pointer3d / tile preview
 window.addEventListener('mouseup', onMouseUp);
 
-
 window.addEventListener('resize', onWindowResize);
 window.addEventListener('pointermove', onPointerMove);
 window.addEventListener('keydown', (event)=>{
@@ -520,7 +521,6 @@ gridPanel = pane.addBinding(MappingConfig.rot, 'z',{}).on('change', (ev) => {
   // tetrahedron.rotateZ(degrees_to_radians(ev.value));
   tetrahedron.rotation.z = degrees_to_radians(ev.value)
 });
-
 
 // gridPanel = pane.addBinding(MappingConfig, 'rot',{}).on('change', (ev) => {
 //   console.log(ev);
@@ -597,7 +597,6 @@ function updateEntityList() {
     entityFolders.push(folder);
   });
 }
-
 
 // const folderMarkers = paneEntity.addFolder({
 //   title: 'Markers',

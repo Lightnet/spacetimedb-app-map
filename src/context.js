@@ -8,6 +8,9 @@ export const dbMapTiles = van.state(new Map());
 export const dbMapMarkers = van.state(new Map());
 export const dbTransform3ds = van.state(new Map());
 
+export const dbImages = van.state(new Map());
+export const dbIcons = van.state(new Map());
+
 export const buildTypes = van.state([
   // {text:'Grid', value:'GRID'},
   {text:'Tile', value:'TILE'},
@@ -18,13 +21,16 @@ export const buildTypes = van.state([
 //localstroage
 let buildType = localStorage.getItem('BUILDTYPE') ?? 'TILE';
 export const stateBuildSelect = van.state(buildType);
+export const stateSelectImageId = van.state(''); //assign id for entityId
 
+export const stateSelectMarkerId = van.state('');
 
 // THREEE
 export const stateScene = van.state(null);
 export const stateOrbitControl = van.state(null);
 
 export const statePHPlane = van.state(null);
+export const stateAxeHelper = van.state(null);
 export const stateMarker = van.state(null);
 export const stateGridSize = van.state(32.0);
 

@@ -5,7 +5,7 @@ import {Pane} from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.
 import van from "vanjs-core";
 import { ViewportGizmo } from "three-viewport-gizmo";
 import { degrees_to_radians } from './helper';
-import { PARAMS, stateBuildSelect, stateConn, stateGrid3DPosition, stateGridSize, stateIntersectionPoint, stateIsDrag, stateMarker, stateMarkers, stateOrbitControl, statePHPlane, statePointer2D, statePointer3D, stateRaycaster, stateScene, stateSelectEntityId } from './context';
+import { PARAMS, stateAxeHelper, stateBuildSelect, stateConn, stateGrid3DPosition, stateGridSize, stateIntersectionPoint, stateIsDrag, stateMarker, stateMarkers, stateOrbitControl, statePHPlane, statePointer2D, statePointer3D, stateRaycaster, stateScene, stateSelectEntityId } from './context';
 
 //-----------------------------------------------
 // THRREE JS
@@ -19,6 +19,7 @@ var gizmo;
 
 function setup_renderer(){
   axesHelper = new THREE.AxesHelper( 5 );
+  stateAxeHelper.val = axesHelper;
   // Scene setup
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x000022); // dark space feel
@@ -367,6 +368,7 @@ function onMouseDown(event){
     const obj = intersects[0].object;
     console.log(obj);
     axesHelper.position.copy(obj.position);
+    
     if(obj.userData?.tag === "Marker"){
       stateSelectEntityId.val = obj.userData?.row?.entityId
       selectedObject = obj; // your group

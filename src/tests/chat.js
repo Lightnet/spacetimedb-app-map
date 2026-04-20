@@ -27,7 +27,6 @@ function apply_messages(ctx){
   console.log("apply");
   console.log(`Ready with ${ctx.db.message.count()} messages`);
   console.log(ctx);
-
 }
 // https://spacetimedb.com/docs/clients/api/
 // 

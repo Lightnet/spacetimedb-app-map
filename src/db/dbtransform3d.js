@@ -1,13 +1,48 @@
 //-----------------------------------------------
 // 
 //-----------------------------------------------
+import * as THREE from 'three';
 import { DbConnection, tables } from '../module_bindings';
-import { dbMapMarkers, dbMapTiles, dbTransform3ds, stateConn, stateGrids, stateMarkers, stateScene, stateSelectEntityId } from "../context";
+import { dbIcons, dbImages, dbMapMarkers, dbMapTiles, dbTransform3ds, stateConn, stateGrids, stateMarkers, stateScene, stateSelectEntityId } from "../context";
 import { addOrUpdateEntity, deleteEntity } from '../helper';
 import { create_model_marker, create_tile } from '../render';
 
 function update_transform3d_position(mesh, row){
   mesh.position.set(row.position.x, row.position.y, row.position.z);
+}
+
+function check_icon_make(mesh, row){
+  // console.log("test");
+  const icon = dbIcons.val.get(row.entityId);
+  
+  if(icon){
+    console.log(icon);
+    console.log("found icon data...");
+    const image = dbImages.val.get(icon.imageId);
+    if(image){
+      console.log("found Image:");
+
+      const blob = new Blob([image.data], { type: "image/png" }); 
+      const tempUrl = URL.createObjectURL(blob);
+      // const tempUrl = URL.createObjectURL(image.data);// nope i think
+      // const tmp = img({width:64, height:64, onclick:()=>selectImageId(image.id)});
+      // tmp.src = tempUrl;
+      const loader = new THREE.TextureLoader();
+      loader.load(tempUrl, (texture) => {
+        // Use a PlaneGeometry to display the 2D image in 3D space
+        const geometry = new THREE.PlaneGeometry(5, 5); 
+        const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+        const mesh = new THREE.Mesh(geometry, material);
+        const scene = stateScene.val;
+        const marker = scene.children.find(r=>r.userData?.row?.entityId == row.entityId)
+        if(marker){
+          marker.add(mesh);
+        }
+        // Optional: Clean up the blob URL after the texture is uploaded to GPU
+        // URL.revokeObjectURL(tempUrl); 
+      });
+    }
+  }
 }
 
 function create_model_check(row){
@@ -25,6 +60,7 @@ function create_model_check(row){
   if(mapMarker){
     const _marker = create_model_marker();
     update_transform3d_position(_marker, row);
+    check_icon_make(_marker, row)
     _marker.userData.row = row;
     const scene = stateScene.val;
     scene.add(_marker);

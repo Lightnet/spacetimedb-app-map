@@ -17,7 +17,6 @@ van.add(document.body, style(`
 }    
 `))
 
-
 // X = Longitude (East-West)
 // Y = Latitude (North-South)
 function latLonToVector3(latitude, longitude, radius = 2) {

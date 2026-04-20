@@ -7,6 +7,8 @@ import { setupDBTransform3D } from './db/dbtransform3d';
 import { DbConnection, tables } from './module_bindings';
 import { setupPane } from './pane_tool';
 import { setupThree } from './render';
+import { setupDBIcon } from './db/dbicon';
+import { setupDBImage } from './db/dbimage';
 const HOST = 'ws://localhost:3000';
 const DB_NAME = 'spacetime-app-map';
 
@@ -36,6 +38,8 @@ function setup(){
   setupThree();
   setupPane();
   setupDBEntity();
+  setupDBIcon();
+  setupDBImage();
   setupDBMapTile();
   setupDBMapMarker();
   setupDBTransform3D();

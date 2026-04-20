@@ -125,11 +125,12 @@ spacetime sql --server local spacetime-app-map "SELECT * FROM icon"
 - [ ] config
 - [ ] Grid Helper
 - [ ] image
-    - [ ] upload
-    - [ ] list
+    - [x] upload
+    - [x] list
     - [ ] delete
 - [ ] icon
     - [ ] create
+      - [x] marker
     - [ ] update
     - [ ] delete
     - [ ] size (need to scale when camera zoom in and out?)

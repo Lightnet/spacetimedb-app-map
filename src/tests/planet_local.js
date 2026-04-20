@@ -110,6 +110,7 @@ function vector3ToLatLon(v, radius = 2) {
 
   return { lat, lon };
 }
+
 // ────────────────────────────────────────────────
 // Mouse move → raycast → show lat/lon
 function onPointerMove(event) {
@@ -246,7 +247,6 @@ function create_marker(x,y,z){
   scene.add(planet_marker);
   markerObjects.push(planet_marker);
 }
-
 
 function create_orbit(x,y,z){
   const geometry_marker = new THREE.SphereGeometry(0.1, 8, 8); // smooth enough

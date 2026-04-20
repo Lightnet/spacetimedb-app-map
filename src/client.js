@@ -5,10 +5,7 @@ import {Pane} from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.
 // import van from "https://cdn.jsdelivr.net/gh/vanjs-org/van/public/van-1.6.0.min.js";
 import van from "vanjs-core";
 import { ViewportGizmo } from "three-viewport-gizmo";
-import { 
-  FloatingWindow,
-  MessageBoard,
-} from "vanjs-ui"
+import { FloatingWindow, MessageBoard} from "vanjs-ui";
 
 import { DbConnection, tables } from './module_bindings';
 

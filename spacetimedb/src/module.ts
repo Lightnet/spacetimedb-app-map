@@ -7,8 +7,8 @@ import { users } from './tables/table_user';
 // import { userAvatar } from './tables/table_avatar_image';
 // import { message } from './tables/table_message';
 import { planets, planetCoordinates, planetMarkers  } from './tables/table_planet';
-import { image } from './tables/table_image';
-import { icon } from './tables/table_icon';
+import { images } from './tables/table_image';
+import { icons } from './tables/table_icon';
 import { text } from './tables/table_text';
 import { entity } from './tables/table_entity';
 import { transform3d } from './tables/table_transform3d';
@@ -18,8 +18,8 @@ import { mapMarkers, mapTiles } from './tables/table_mapping';
 // ----------------------------------------------
 const spacetimedb = schema({
   users,
-  image,
-  icon,
+  images,
+  icons,
   text,
   // ENTITY
   entity,
