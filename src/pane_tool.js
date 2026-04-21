@@ -115,8 +115,8 @@ function setupEditorPane(){
 
   imageFolder.addButton({title:'Delete Icon'}).on('click',()=>{
     const conn = stateConn.val;
-    conn.reducers.deleteIcon({
-      id: stateSelectImageId.val
+    conn.reducers.deleteIconByEntity({
+      id: stateSelectMarkerId.val
     });
   });
 

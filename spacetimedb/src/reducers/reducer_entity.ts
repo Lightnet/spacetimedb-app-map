@@ -47,3 +47,9 @@ export const delete_icon = spacetimedb.reducer({
 }, (ctx, { id }) => {
   ctx.db.icons.id.delete(id)
 });
+
+export const delete_icon_by_entity = spacetimedb.reducer({
+ id: t.string()
+}, (ctx, { id }) => {
+  ctx.db.icons.entityId.delete(id)
+});

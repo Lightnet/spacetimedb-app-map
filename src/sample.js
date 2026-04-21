@@ -54,6 +54,7 @@ const conn = DbConnection.builder()
     stateStatus.val = 'Connected';
     stateConn.val = conn;
     setup();
+    
 
     // loadingscreen
     document.body.removeChild(loadingscreen);
@@ -75,10 +76,10 @@ function setup(){
   setupThree();
   setupPane();
   setupDBEntity();
-  setupDBIcon();
-  setupDBImage();
   setupDBMapTile();
   setupDBMapMarker();
+  setupDBIcon();
+  setupDBImage();
   setupDBTransform3D();
 }
 

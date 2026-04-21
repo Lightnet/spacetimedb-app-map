@@ -84,7 +84,7 @@ export function create_model_marker(){
   geometry.rotateX(Math.PI); 
   const _pointer = new THREE.Mesh( geometry, material );
   // _marker.rotation.x = Math.PI;
-  _pointer.userData.tag='Marker';
+  _pointer.userData.tag='MARKER';
   _pointer.position.set(0,4,0);
   // return _marker;
   ObjMarker.add(_pointer);
@@ -117,7 +117,7 @@ export function create_tile(){
   });
   const plane = new THREE.Mesh( p_geometry, p_material );
   plane.rotateX(degrees_to_radians(90));
-  plane.userData.type='tile'
+  plane.userData.type='TILE'
   return plane;
 }
 //-----------------------------------------------
@@ -252,7 +252,7 @@ function place_tile_grid(){
       (objModel.position.x == gridPosition.x)&&
       (objModel.position.y == gridPosition.y)&&
       (objModel.position.z == gridPosition.z)){
-      if(objModel?.userData?.type=='tile'){
+      if(objModel?.userData?.type=='TILE'){
         isFound=true;
         console.log("FOUND SAME POSITION");
       }
@@ -278,7 +278,7 @@ function delete_tile_grid(){
       (objModel.position.x == gridPosition.x)&&
       (objModel.position.y == gridPosition.y)&&
       (objModel.position.z == gridPosition.z)){
-      if(objModel?.userData?.type=='tile'){
+      if(objModel?.userData?.type=='TILE'){
         console.log(objModel.userData);
         // isFound=true;
         console.log("FOUND SAME POSITION");
@@ -313,7 +313,7 @@ function delete_marker(){
     const obj = intersects[0].object;
     console.log(obj);
     axesHelper.position.copy(obj.position);
-    if(obj.userData?.tag === "Marker"){
+    if(obj.userData?.tag === "MARKER"){
       stateSelectEntityId.val = obj.userData?.row?.entityId
       console.log("FOUND TO DELETE?");
       try {
@@ -380,7 +380,7 @@ function onMouseDown(event){
     console.log(obj);
     axesHelper.position.copy(obj.position);
     
-    if(obj.userData?.tag === "Marker"){
+    if(obj.userData?.tag === "MARKER"){
       console.log("marker detect ray cast");
       stateSelectEntityId.val = obj.parent.userData?.row?.entityId
       console.log(stateSelectEntityId.val);

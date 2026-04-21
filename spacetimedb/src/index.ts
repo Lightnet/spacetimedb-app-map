@@ -30,6 +30,7 @@ import {
     create_icon,
     update_icon,
     delete_icon,
+    delete_icon_by_entity,
 } from './reducers/reducer_entity'
 
 import {
@@ -57,6 +58,7 @@ export {
     create_icon,
     update_icon,
     delete_icon,
+    delete_icon_by_entity,
     // planet
     create_planet_marker,
     update_planet_maker,
