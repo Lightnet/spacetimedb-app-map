@@ -22,7 +22,6 @@ body{
   background-color:gray;
 }
 `);
-
 van.add(document.body, css);
 
 const loadingscreen = div({style:`
@@ -78,8 +77,8 @@ function setup(){
   setupDBEntity();
   setupDBMapTile();
   setupDBMapMarker();
-  setupDBIcon();
   setupDBImage();
+  setupDBIcon();
   setupDBTransform3D();
 }
 
